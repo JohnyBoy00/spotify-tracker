@@ -222,6 +222,7 @@ class SpotifyController extends Controller
             // Format results for frontend
             $tracks = array_map(function($track) {
                 return [
+                    'id' => $track->id,
                     'name' => $track->name,
                     'artists' => implode(', ', array_map(fn($artist) => $artist->name, $track->artists)),
                     'image' => $track->album->images[2]->url ?? null,
@@ -234,6 +235,46 @@ class SpotifyController extends Controller
 
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Display track details page.
+     *
+     * @param string $id
+     * @return \Illuminate\View\View
+     */
+    public function trackDetails($id)
+    {
+        $accessToken = session('spotify_access_token');
+
+        if (!$accessToken) {
+            return redirect()->route('home')->with('error', 'Please connect to Spotify first.');
+        }
+
+        $api = new SpotifyWebAPI();
+        $api->setAccessToken($accessToken);
+
+        try {
+            // Get track details
+            $track = $api->getTrack($id);
+            
+            // Try to get audio features (may fail with 403 if no permission)
+            $audioFeatures = null;
+            try {
+                $audioFeatures = $api->getAudioFeatures($id);
+            } catch (\Exception $e) {
+                \Log::info('Could not fetch audio features: ' . $e->getMessage());
+            }
+            
+            // Get user profile
+            $user = $api->me();
+
+            return view('track', compact('track', 'audioFeatures', 'user'));
+
+        } catch (\Exception $e) {
+            \Log::error('Track details error: ' . $e->getMessage());
+            return redirect()->route('search')->with('error', 'Error fetching track details: ' . $e->getMessage());
         }
     }
 

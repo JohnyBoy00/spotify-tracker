@@ -99,6 +99,27 @@
                         <a href="{{ route('search') }}" class="nav-link active py-5 px-2 text-sm font-medium">Search</a>
                     </div>
                 </div>
+                
+                <!-- Search Bar -->
+                <div class="flex-1 max-w-md mx-8 hidden lg:block">
+                    <form action="{{ route('search') }}" method="GET">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input 
+                                type="text" 
+                                name="q" 
+                                value="{{ request('q') }}"
+                                placeholder="Search songs..." 
+                                class="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
+                            >
+                        </div>
+                    </form>
+                </div>
+
                 <div class="flex items-center gap-4">
                     <div class="flex items-center gap-3">
                         @if(isset($user->images[0]))
@@ -120,6 +141,16 @@
 
     <!-- Main Content -->
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Error Message -->
+        @if(session('error'))
+            <div class="mb-6 bg-red-900/50 border border-red-500 text-red-200 px-6 py-4 rounded-lg flex items-center gap-3">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p>{{ session('error') }}</p>
+            </div>
+        @endif
 
         <!-- Page Header -->
         <div class="mb-8 text-center">
@@ -174,7 +205,7 @@
                     
                     <div class="space-y-3">
                         @foreach($results->tracks->items as $track)
-                            <div class="track-card rounded-xl p-4 flex items-center gap-4">
+                            <a href="{{ route('track.details', $track->id) }}" class="track-card rounded-xl p-4 flex items-center gap-4 block">
                                 @if(isset($track->album->images[2]))
                                     <img src="{{ $track->album->images[2]->url }}" alt="Album" class="w-16 h-16 rounded-lg shadow-lg">
                                 @endif
@@ -188,15 +219,10 @@
                                     <p class="text-sm text-gray-400 truncate max-w-xs">{{ $track->album->name }}</p>
                                     <p class="text-xs text-gray-500">{{ gmdate('i:s', $track->duration_ms / 1000) }}</p>
                                 </div>
-                                @if($track->preview_url)
-                                    <a href="{{ $track->external_urls->spotify }}" target="_blank" class="px-4 py-2 bg-gray-800 hover:bg-green-600 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
-                                        </svg>
-                                        Play
-                                    </a>
-                                @endif
-                            </div>
+                                <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                </svg>
+                            </a>
                         @endforeach
                     </div>
                 </div>
@@ -283,7 +309,7 @@
         // Display results in dropdown
         function displayResults(tracks) {
             dropdown.innerHTML = tracks.map(track => `
-                <a href="${track.spotify_url}" target="_blank" class="autocomplete-item flex items-center gap-4 p-4 border-b border-gray-800 cursor-pointer block">
+                <a href="/track/${track.id}" class="autocomplete-item flex items-center gap-4 p-4 border-b border-gray-800 cursor-pointer block">
                     ${track.image ? `<img src="${track.image}" alt="Album" class="w-14 h-14 rounded-lg shadow-lg flex-shrink-0">` : '<div class="w-14 h-14 bg-gray-800 rounded-lg flex-shrink-0"></div>'}
                     <div class="flex-1 min-w-0">
                         <p class="font-semibold text-white truncate text-base">${escapeHtml(track.name)}</p>

@@ -18,10 +18,10 @@ Route::get('/dashboard', [SpotifyController::class, 'dashboard'])->name('dashboa
 // Stats page (requires authentication)
 Route::get('/stats', [SpotifyController::class, 'stats'])->name('stats');
 
-// Search page (requires authentication)
-Route::get('/search', [SpotifyController::class, 'search'])->name('search');
+// Track details page (requires authentication)
+Route::get('/track/{id}', [SpotifyController::class, 'trackDetails'])->name('track.details');
 
-// API endpoint for autocomplete
+// API endpoint for autocomplete search
 Route::get('/api/search', [SpotifyController::class, 'apiSearch'])->name('api.search');
 
 // Logout

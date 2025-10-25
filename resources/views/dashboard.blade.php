@@ -44,6 +44,30 @@
             color: #1DB954;
             border-bottom: 2px solid #1DB954;
         }
+        .autocomplete-dropdown {
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .autocomplete-dropdown::-webkit-scrollbar {
+            display: none;
+        }
+        .autocomplete-dropdown.show {
+            display: block;
+        }
+        .autocomplete-item {
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .autocomplete-item:hover {
+            background: rgba(29, 185, 84, 0.15) !important;
+            transform: translateX(4px);
+        }
+        .autocomplete-item:last-child {
+            border-bottom: none !important;
+        }
     </style>
 </head>
 <body class="bg-black text-white min-h-screen overflow-x-hidden">
@@ -55,7 +79,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="relative z-10 glass-card border-b border-gray-800">
+    <nav class="relative z-50 glass-card border-b border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center gap-8">
@@ -71,9 +95,32 @@
                     <div class="hidden md:flex items-center gap-6">
                         <a href="{{ route('dashboard') }}" class="nav-link active py-5 px-2 text-sm font-medium">Dashboard</a>
                         <a href="{{ route('stats') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Stats</a>
-                        <a href="{{ route('search') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Search</a>
                     </div>
                 </div>
+                
+                <!-- Search Bar with Autocomplete -->
+                <div class="flex-1 max-w-lg mx-8 hidden lg:block relative z-50">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <input 
+                            type="text" 
+                            id="navSearchInput"
+                            placeholder="Search for songs, artists, or albums..." 
+                            autocomplete="off"
+                            class="w-full pl-11 pr-4 py-2.5 bg-gray-900/70 border border-gray-700 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/50 transition-all"
+                        >
+                        
+                        <!-- Autocomplete Dropdown -->
+                        <div id="navAutocompleteDropdown" class="autocomplete-dropdown absolute w-full mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl">
+                            <!-- Results will be inserted here via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex items-center gap-4">
                     <div class="flex items-center gap-3">
                         @if(isset($user->images[0]))
@@ -222,5 +269,101 @@
         </div>
 
     </div>
+
+    <!-- Autocomplete JavaScript -->
+    <script>
+        const searchInput = document.getElementById('navSearchInput');
+        const dropdown = document.getElementById('navAutocompleteDropdown');
+        let debounceTimer;
+        let currentResults = [];
+
+        function debounce(func, delay) {
+            return function(...args) {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+
+        async function fetchResults(query) {
+            if (query.length < 2) {
+                dropdown.classList.remove('show');
+                currentResults = [];
+                return;
+            }
+
+            dropdown.innerHTML = '<div class="p-4 text-gray-400 text-center text-sm">Searching...</div>';
+            dropdown.classList.add('show');
+
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.tracks && data.tracks.length > 0) {
+                    currentResults = data.tracks;
+                    displayResults(data.tracks);
+                } else {
+                    currentResults = [];
+                    dropdown.innerHTML = '<div class="p-4 text-gray-400 text-center text-sm">No results found</div>';
+                    dropdown.classList.add('show');
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                currentResults = [];
+                dropdown.innerHTML = '<div class="p-4 text-red-400 text-center text-sm">Error searching</div>';
+                dropdown.classList.add('show');
+            }
+        }
+
+        function displayResults(tracks) {
+            dropdown.innerHTML = tracks.map(track => `
+                <a href="/track/${track.id}" class="autocomplete-item flex items-center gap-3 p-3 border-b border-gray-800 cursor-pointer block">
+                    ${track.image ? `<img src="${track.image}" alt="Album" class="w-12 h-12 rounded-lg shadow-lg flex-shrink-0">` : '<div class="w-12 h-12 bg-gray-800 rounded-lg flex-shrink-0"></div>'}
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-white truncate text-sm">${escapeHtml(track.name)}</p>
+                        <p class="text-xs text-gray-400 truncate">${escapeHtml(track.artists)}</p>
+                    </div>
+                    <div class="text-xs text-gray-500 flex-shrink-0">${track.duration}</div>
+                    <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                </a>
+            `).join('');
+            dropdown.classList.add('show');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        searchInput.addEventListener('input', debounce((e) => {
+            fetchResults(e.target.value);
+        }, 300));
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        searchInput.addEventListener('focus', () => {
+            if (dropdown.innerHTML && searchInput.value.length >= 2) {
+                dropdown.classList.add('show');
+            }
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                dropdown.classList.remove('show');
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                // Navigate to first result if available
+                if (currentResults.length > 0) {
+                    window.location.href = `/track/${currentResults[0].id}`;
+                }
+            }
+        });
+    </script>
 </body>
 </html>
