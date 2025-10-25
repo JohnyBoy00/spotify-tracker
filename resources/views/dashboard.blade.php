@@ -358,9 +358,10 @@
                 dropdown.classList.remove('show');
             } else if (e.key === 'Enter') {
                 e.preventDefault();
-                // Navigate to first result if available
-                if (currentResults.length > 0) {
-                    window.location.href = `/track/${currentResults[0].id}`;
+                // Navigate to search results page with the query
+                const query = searchInput.value.trim();
+                if (query.length >= 2) {
+                    window.location.href = `/search?q=${encodeURIComponent(query)}`;
                 }
             }
         });

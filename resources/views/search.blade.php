@@ -153,14 +153,19 @@
         @endif
 
         <!-- Page Header -->
-        <div class="mb-8 text-center">
-            <h1 class="text-4xl font-bold mb-2">Search Spotify</h1>
-            <p class="text-gray-400">Find any song, artist, or album</p>
+        <div class="mb-8">
+            @if(request('q'))
+                <h1 class="text-4xl font-bold mb-2">Search Results</h1>
+                <p class="text-gray-400">Showing results for "<span class="text-green-400">{{ request('q') }}</span>"</p>
+            @else
+                <h1 class="text-4xl font-bold mb-2">Search Spotify</h1>
+                <p class="text-gray-400">Find any song, artist, or album</p>
+            @endif
         </div>
 
         <!-- Search Box -->
-        <div class="glass-card rounded-2xl p-8 mb-8 shadow-2xl">
-            <form action="{{ route('search') }}" method="GET" class="relative">
+        <div class="glass-card rounded-2xl p-6 mb-8 shadow-2xl">
+            <form action="{{ route('search') }}" method="GET">
                 <div class="flex gap-3">
                     <div class="flex-1 relative">
                         <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
@@ -171,18 +176,11 @@
                         <input 
                             type="text" 
                             name="q" 
-                            id="searchInput"
                             value="{{ request('q') }}"
                             placeholder="Search for songs, artists, or albums..." 
-                            class="search-input w-full pl-14 pr-4 py-4 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 text-lg transition-all"
-                            autocomplete="off"
+                            class="w-full pl-14 pr-4 py-4 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 text-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/50 transition-all"
                             autofocus
                         >
-                        
-                        <!-- Autocomplete Dropdown -->
-                        <div id="autocompleteDropdown" class="autocomplete-dropdown absolute w-full mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl z-50">
-                            <!-- Results will be inserted here via JavaScript -->
-                        </div>
                     </div>
                     <button type="submit" class="px-8 py-4 spotify-gradient hover:shadow-lg hover:shadow-green-500/50 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105">
                         Search
@@ -258,114 +256,6 @@
         </div>
 
     </div>
-
-    <!-- Autocomplete JavaScript -->
-    <script>
-        const searchInput = document.getElementById('searchInput');
-        const dropdown = document.getElementById('autocompleteDropdown');
-        const emptyState = document.getElementById('emptyState');
-        let debounceTimer;
-
-        // Debounce function to avoid too many API calls
-        function debounce(func, delay) {
-            return function(...args) {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
-
-        // Fetch search results
-        async function fetchResults(query) {
-            if (query.length < 2) {
-                dropdown.classList.remove('show');
-                if (emptyState) emptyState.style.display = 'block';
-                return;
-            }
-
-            // Hide empty state when searching
-            if (emptyState) emptyState.style.display = 'none';
-
-            // Show loading state
-            dropdown.innerHTML = '<div class="p-4 text-gray-400 text-center">Searching...</div>';
-            dropdown.classList.add('show');
-
-            try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-                const data = await response.json();
-                
-                if (data.tracks && data.tracks.length > 0) {
-                    displayResults(data.tracks);
-                } else {
-                    dropdown.innerHTML = '<div class="p-4 text-gray-400 text-center">No results found</div>';
-                    dropdown.classList.add('show');
-                }
-            } catch (error) {
-                console.error('Search error:', error);
-                dropdown.innerHTML = '<div class="p-4 text-red-400 text-center">Error searching. Please try again.</div>';
-                dropdown.classList.add('show');
-            }
-        }
-
-        // Display results in dropdown
-        function displayResults(tracks) {
-            dropdown.innerHTML = tracks.map(track => `
-                <a href="/track/${track.id}" class="autocomplete-item flex items-center gap-4 p-4 border-b border-gray-800 cursor-pointer block">
-                    ${track.image ? `<img src="${track.image}" alt="Album" class="w-14 h-14 rounded-lg shadow-lg flex-shrink-0">` : '<div class="w-14 h-14 bg-gray-800 rounded-lg flex-shrink-0"></div>'}
-                    <div class="flex-1 min-w-0">
-                        <p class="font-semibold text-white truncate text-base">${escapeHtml(track.name)}</p>
-                        <p class="text-sm text-gray-400 truncate">${escapeHtml(track.artists)}</p>
-                    </div>
-                    <div class="text-xs text-gray-500 flex-shrink-0">${track.duration}</div>
-                    <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                    </svg>
-                </a>
-            `).join('');
-            dropdown.classList.add('show');
-        }
-
-        // Escape HTML to prevent XSS
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Listen for input changes
-        searchInput.addEventListener('input', debounce((e) => {
-            fetchResults(e.target.value);
-        }, 300));
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.classList.remove('show');
-                // Show empty state again if no search query
-                if (emptyState && searchInput.value.length < 2) {
-                    emptyState.style.display = 'block';
-                }
-            }
-        });
-
-        // Show dropdown again when input is focused (if it has content)
-        searchInput.addEventListener('focus', () => {
-            if (dropdown.innerHTML && searchInput.value.length >= 2) {
-                dropdown.classList.add('show');
-                if (emptyState) emptyState.style.display = 'none';
-            }
-        });
-
-        // Close dropdown when pressing Escape
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                dropdown.classList.remove('show');
-                // Show empty state again if no search query
-                if (emptyState && searchInput.value.length < 2) {
-                    emptyState.style.display = 'block';
-                }
-            }
-        });
-    </script>
 </body>
 </html>
 

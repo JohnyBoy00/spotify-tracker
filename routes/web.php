@@ -18,6 +18,9 @@ Route::get('/dashboard', [SpotifyController::class, 'dashboard'])->name('dashboa
 // Stats page (requires authentication)
 Route::get('/stats', [SpotifyController::class, 'stats'])->name('stats');
 
+// Search results page (requires authentication)
+Route::get('/search', [SpotifyController::class, 'search'])->name('search');
+
 // Track details page (requires authentication)
 Route::get('/track/{id}', [SpotifyController::class, 'trackDetails'])->name('track.details');
 
