@@ -68,7 +68,7 @@ class SpotifyController extends Controller
     }
 
     /**
-     * Display user's Spotify statistics dashboard.
+     * Display user's Spotify dashboard (overview).
      *
      * @return \Illuminate\View\View
      */
@@ -84,16 +84,10 @@ class SpotifyController extends Controller
         $api->setAccessToken($accessToken);
 
         try {
-            // Get user's top tracks
+            // Get user's top 5 tracks for the last month (short_term)
             $topTracks = $api->getMyTop('tracks', [
-                'limit' => 10,
-                'time_range' => 'medium_term' // last 6 months
-            ]);
-
-            // Get user's top artists
-            $topArtists = $api->getMyTop('artists', [
-                'limit' => 10,
-                'time_range' => 'medium_term'
+                'limit' => 5,
+                'time_range' => 'short_term' // last ~4 weeks
             ]);
 
             // Get recently played tracks
@@ -104,7 +98,56 @@ class SpotifyController extends Controller
             // Get user profile
             $user = $api->me();
 
-            return view('dashboard', compact('topTracks', 'topArtists', 'recentlyPlayed', 'user'));
+            return view('dashboard', compact('topTracks', 'recentlyPlayed', 'user'));
+
+        } catch (\Exception $e) {
+            return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Display detailed statistics page with time range filters.
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function stats(Request $request)
+    {
+        $accessToken = session('spotify_access_token');
+
+        if (!$accessToken) {
+            return redirect()->route('home')->with('error', 'Please connect to Spotify first.');
+        }
+
+        $api = new SpotifyWebAPI();
+        $api->setAccessToken($accessToken);
+
+        // Get time range from query parameter, default to medium_term (6 months)
+        $timeRange = $request->query('range', 'medium_term');
+        
+        // Validate time range
+        $validRanges = ['short_term', 'medium_term', 'long_term'];
+        if (!in_array($timeRange, $validRanges)) {
+            $timeRange = 'medium_term';
+        }
+
+        try {
+            // Get user's top tracks with selected time range
+            $topTracks = $api->getMyTop('tracks', [
+                'limit' => 50,
+                'time_range' => $timeRange
+            ]);
+
+            // Get user's top artists with selected time range
+            $topArtists = $api->getMyTop('artists', [
+                'limit' => 50,
+                'time_range' => $timeRange
+            ]);
+
+            // Get user profile
+            $user = $api->me();
+
+            return view('stats', compact('topTracks', 'topArtists', 'user'));
 
         } catch (\Exception $e) {
             return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $e->getMessage());

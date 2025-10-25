@@ -27,22 +27,22 @@
             border-color: rgba(29, 185, 84, 0.3);
             transform: translateX(8px);
         }
-        .artist-card {
-            background: rgba(29, 185, 84, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s ease;
-        }
-        .artist-card:hover {
-            background: rgba(29, 185, 84, 0.1);
-            border-color: rgba(29, 185, 84, 0.3);
-            transform: translateY(-4px);
-        }
         .spotify-gradient {
             background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
         }
         .rank-badge {
             background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
             box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4);
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #1DB954;
+        }
+        .nav-link.active {
+            color: #1DB954;
+            border-bottom: 2px solid #1DB954;
         }
     </style>
 </head>
@@ -58,13 +58,20 @@
     <nav class="relative z-10 glass-card border-b border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="flex items-center gap-3">
-                    <svg class="w-8 h-8" fill="#1DB954" viewBox="0 0 24 24">
-                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
-                    </svg>
-                    <h1 class="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                        Spotify Tracker
-                    </h1>
+                <div class="flex items-center gap-8">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-8 h-8" fill="#1DB954" viewBox="0 0 24 24">
+                            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                        </svg>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                            Spotify Tracker
+                        </h1>
+                    </div>
+                    <!-- Navigation Links -->
+                    <div class="hidden md:flex items-center gap-6">
+                        <a href="{{ route('dashboard') }}" class="nav-link active py-5 px-2 text-sm font-medium">Dashboard</a>
+                        <a href="{{ route('stats') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Stats</a>
+                    </div>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="flex items-center gap-3">
@@ -89,17 +96,29 @@
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         @if(session('success'))
-            <div class="mb-6 p-4 bg-green-500 bg-opacity-20 border border-green-500 rounded-lg flex items-center gap-3">
+            <div id="success-message" class="mb-6 p-4 bg-green-500 bg-opacity-20 border border-green-500 rounded-lg flex items-center gap-3 transition-opacity duration-500">
                 <svg class="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                 </svg>
                 <span class="text-green-100 font-medium">{{ session('success') }}</span>
             </div>
+            <script>
+                // Auto-hide success message after 3 seconds
+                setTimeout(function() {
+                    const message = document.getElementById('success-message');
+                    if (message) {
+                        message.style.opacity = '0';
+                        setTimeout(function() {
+                            message.style.display = 'none';
+                        }, 500);
+                    }
+                }, 3000);
+            </script>
         @endif
 
         <!-- Welcome Section -->
         <div class="glass-card rounded-2xl p-8 mb-8 shadow-2xl">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between flex-wrap gap-4">
                 <div class="flex items-center gap-4">
                     @if(isset($user->images[0]))
                         <img src="{{ $user->images[0]->url }}" alt="Profile" class="w-20 h-20 rounded-full ring-4 ring-green-500 shadow-lg">
@@ -118,22 +137,30 @@
                         </div>
                     </div>
                 </div>
-                <div class="hidden md:block">
-                    <div class="text-right">
-                        <p class="text-gray-400 text-sm">Your music journey</p>
-                        <p class="text-2xl font-bold text-green-400">{{ count($topTracks->items) }} Top Tracks</p>
-                    </div>
-                </div>
+                <a href="{{ route('stats') }}" class="px-6 py-3 spotify-gradient hover:shadow-lg hover:shadow-green-500/50 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2">
+                    <span>View Full Stats</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </a>
             </div>
         </div>
 
-        <!-- Top Tracks -->
+        <!-- Top 5 Tracks This Month -->
         <div class="glass-card rounded-2xl p-8 mb-8 shadow-2xl">
-            <div class="flex items-center gap-3 mb-6">
-                <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
-                </svg>
-                <h2 class="text-2xl font-bold">Your Top Tracks</h2>
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                    </svg>
+                    <h2 class="text-2xl font-bold">Top 5 Tracks This Month</h2>
+                </div>
+                <a href="{{ route('stats') }}" class="text-green-400 hover:text-green-300 text-sm font-medium flex items-center gap-1">
+                    View All
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
             </div>
             <div class="space-y-3">
                 @foreach($topTracks->items as $index => $track)
@@ -152,36 +179,6 @@
                         </div>
                         <div class="text-right hidden md:block">
                             <p class="text-sm text-gray-400 truncate max-w-xs">{{ $track->album->name }}</p>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-
-        <!-- Top Artists -->
-        <div class="glass-card rounded-2xl p-8 mb-8 shadow-2xl">
-            <div class="flex items-center gap-3 mb-6">
-                <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-                <h2 class="text-2xl font-bold">Your Top Artists</h2>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                @foreach($topArtists->items as $index => $artist)
-                    <div class="artist-card rounded-xl p-5 flex items-center gap-4">
-                        @if(isset($artist->images[2]))
-                            <img src="{{ $artist->images[2]->url }}" alt="Artist" class="w-16 h-16 rounded-full shadow-lg ring-2 ring-green-500 ring-opacity-50">
-                        @else
-                            <div class="w-16 h-16 rounded-full spotify-gradient flex items-center justify-center">
-                                <span class="text-white font-bold text-xl">{{ substr($artist->name, 0, 1) }}</span>
-                            </div>
-                        @endif
-                        <div class="flex-1 min-w-0">
-                            <p class="font-semibold text-white truncate">{{ $artist->name }}</p>
-                            <p class="text-xs text-gray-400 truncate">
-                                {{ ucfirst(collect($artist->genres)->take(2)->join(', ')) ?: 'Artist' }}
-                            </p>
-                            <p class="text-xs text-green-400 mt-1">{{ number_format($artist->followers->total) }} followers</p>
                         </div>
                     </div>
                 @endforeach

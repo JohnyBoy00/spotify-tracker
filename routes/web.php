@@ -15,5 +15,8 @@ Route::get('/callback', [SpotifyController::class, 'handleSpotifyCallback'])->na
 // Dashboard (requires authentication)
 Route::get('/dashboard', [SpotifyController::class, 'dashboard'])->name('dashboard');
 
+// Stats page (requires authentication)
+Route::get('/stats', [SpotifyController::class, 'stats'])->name('stats');
+
 // Logout
 Route::get('/logout', [SpotifyController::class, 'logout'])->name('spotify.logout');
