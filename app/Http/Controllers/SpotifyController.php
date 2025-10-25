@@ -24,11 +24,9 @@ class SpotifyController extends Controller
             config('spotify.redirect_uri')
         );
 
-        // Scopes need to be space-separated string
-        $scopes = implode(' ', config('spotify.scopes'));
-
+        // The library expects an array of scopes, not a string
         $options = [
-            'scope' => $scopes,
+            'scope' => config('spotify.scopes'),
         ];
 
         $authorizeUrl = $session->getAuthorizeUrl($options);
