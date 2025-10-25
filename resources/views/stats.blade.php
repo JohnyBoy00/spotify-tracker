@@ -197,10 +197,19 @@
                     </svg>
                     Top Artists
                 </button>
+                <button onclick="switchTab('minutes')" class="tab-button px-6 py-3 rounded-lg font-semibold text-gray-400 flex items-center gap-2 relative" id="minutes-tab">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Minutes Listened
+                    <span class="ml-2 px-2 py-0.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold rounded-full">
+                        SOON
+                    </span>
+                </button>
             </div>
 
             <!-- Time Range Filter -->
-            <div class="flex flex-wrap gap-2 mb-6">
+            <div id="time-range-filter" class="flex flex-wrap gap-2 mb-6">
                 <a href="?range=short_term" class="px-4 py-2 rounded-lg text-sm font-medium transition-all {{ request('range', 'medium_term') == 'short_term' ? 'spotify-gradient text-white shadow-lg' : 'bg-gray-800 text-gray-300 hover:bg-gray-700' }}">
                     Last Month
                 </a>
@@ -260,6 +269,47 @@
                     @endforeach
                 </div>
             </div>
+
+            <!-- Minutes Content -->
+            <div id="minutes-content" class="tab-content">
+                <!-- Preview Stats Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 opacity-50 pointer-events-none">
+                    <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
+                        <p class="text-gray-500 text-sm mb-2">This Week</p>
+                        <p class="text-4xl font-bold text-gray-600">---</p>
+                        <p class="text-xs text-gray-600 mt-2">minutes</p>
+                    </div>
+                    <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
+                        <p class="text-gray-500 text-sm mb-2">This Month</p>
+                        <p class="text-4xl font-bold text-gray-600">---</p>
+                        <p class="text-xs text-gray-600 mt-2">minutes</p>
+                    </div>
+                    <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
+                        <p class="text-gray-500 text-sm mb-2">This Year</p>
+                        <p class="text-4xl font-bold text-gray-600">---</p>
+                        <p class="text-xs text-gray-600 mt-2">minutes</p>
+                    </div>
+                    <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
+                        <p class="text-gray-500 text-sm mb-2">All Time</p>
+                        <p class="text-4xl font-bold text-gray-600">---</p>
+                        <p class="text-xs text-gray-600 mt-2">minutes</p>
+                    </div>
+                </div>
+
+                <!-- Info Message -->
+                <div class="flex items-start gap-4 bg-blue-500/10 border border-blue-500/30 rounded-xl p-6">
+                    <svg class="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <p class="text-blue-200 font-semibold mb-2">Feature in Development</p>
+                        <p class="text-blue-300/90 text-sm leading-relaxed">
+                            This feature will track your listening time across all periods. Since Spotify doesn't provide this data directly, 
+                            we'll need to build custom tracking that monitors your playback activity. Stay tuned for updates!
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -289,6 +339,14 @@
             const activeButton = document.getElementById(tab + '-tab');
             activeButton.classList.add('active');
             activeButton.classList.remove('text-gray-400');
+
+            // Show/hide time range filter based on tab
+            const timeRangeFilter = document.getElementById('time-range-filter');
+            if (tab === 'minutes') {
+                timeRangeFilter.style.display = 'none';
+            } else {
+                timeRangeFilter.style.display = 'flex';
+            }
         }
     </script>
 
