@@ -153,9 +153,17 @@
         <div class="glass-card rounded-2xl p-8 mb-8 shadow-2xl fade-in">
             <div class="flex flex-col md:flex-row gap-8">
                 <!-- Album Art -->
-                <div class="flex-shrink-0">
+                <div class="flex-shrink-0 relative group cursor-pointer" id="album-art-container">
                     @if(isset($track->album->images[0]))
-                        <img src="{{ $track->album->images[0]->url }}" alt="Album Art" class="w-64 h-64 rounded-xl shadow-2xl">
+                        <img src="{{ $track->album->images[0]->url }}" alt="Album Art" class="w-64 h-64 rounded-xl shadow-2xl transition-transform duration-300 group-hover:scale-105">
+                        <!-- Download Overlay -->
+                        <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl flex flex-col items-center justify-center pointer-events-none">
+                            <svg class="w-16 h-16 text-green-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            <p class="text-white font-semibold text-lg">Click to Download</p>
+                            <p class="text-gray-300 text-sm mt-1">High Quality ({{ $track->album->images[0]->width ?? '640' }}x{{ $track->album->images[0]->height ?? '640' }})</p>
+                        </div>
                     @endif
                 </div>
 
@@ -490,6 +498,45 @@
                 }
             }
         });
+    </script>
+
+    <!-- Album Art Download Script -->
+    <script>
+        // Handle click-to-download album art
+        const albumArtContainer = document.getElementById('album-art-container');
+        
+        if (albumArtContainer) {
+            albumArtContainer.addEventListener('click', async function() {
+                const imageUrl = '{{ $track->album->images[0]->url ?? '' }}';
+                const fileName = '{{ $track->name }} - {{ $track->album->name }}.jpg';
+                
+                if (!imageUrl) return;
+                
+                try {
+                    // Fetch the image
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    
+                    // Create a temporary URL for the blob
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    
+                    // Create a temporary anchor element and trigger download
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    // Clean up
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(blobUrl);
+                } catch (error) {
+                    console.error('Download failed:', error);
+                    // Fallback: open in new tab
+                    window.open(imageUrl, '_blank');
+                }
+            });
+        }
     </script>
 </body>
 </html>
