@@ -155,6 +155,89 @@ class SpotifyController extends Controller
     }
 
     /**
+     * Search for tracks on Spotify.
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function search(Request $request)
+    {
+        $accessToken = session('spotify_access_token');
+
+        if (!$accessToken) {
+            return redirect()->route('home')->with('error', 'Please connect to Spotify first.');
+        }
+
+        $api = new SpotifyWebAPI();
+        $api->setAccessToken($accessToken);
+
+        try {
+            $user = $api->me();
+            $results = null;
+
+            // If there's a search query, perform the search
+            if ($request->has('q') && !empty($request->query('q'))) {
+                $query = $request->query('q');
+                
+                $results = $api->search($query, 'track', [
+                    'limit' => 50
+                ]);
+            }
+
+            return view('search', compact('user', 'results'));
+
+        } catch (\Exception $e) {
+            return redirect()->route('home')->with('error', 'Error searching Spotify: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * API endpoint for autocomplete search.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function apiSearch(Request $request)
+    {
+        $accessToken = session('spotify_access_token');
+
+        if (!$accessToken) {
+            return response()->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $api = new SpotifyWebAPI();
+        $api->setAccessToken($accessToken);
+
+        try {
+            $query = $request->query('q');
+            
+            if (empty($query)) {
+                return response()->json(['tracks' => []]);
+            }
+
+            $results = $api->search($query, 'track', [
+                'limit' => 10 // Limit to 10 for autocomplete
+            ]);
+
+            // Format results for frontend
+            $tracks = array_map(function($track) {
+                return [
+                    'name' => $track->name,
+                    'artists' => implode(', ', array_map(fn($artist) => $artist->name, $track->artists)),
+                    'image' => $track->album->images[2]->url ?? null,
+                    'duration' => gmdate('i:s', $track->duration_ms / 1000),
+                    'spotify_url' => $track->external_urls->spotify,
+                ];
+            }, $results->tracks->items);
+
+            return response()->json(['tracks' => $tracks]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Logout and clear Spotify session.
      *
      * @return \Illuminate\Http\RedirectResponse

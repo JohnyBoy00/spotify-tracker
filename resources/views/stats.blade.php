@@ -103,6 +103,7 @@
                     <div class="hidden md:flex items-center gap-6">
                         <a href="{{ route('dashboard') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Dashboard</a>
                         <a href="{{ route('stats') }}" class="nav-link active py-5 px-2 text-sm font-medium">Stats</a>
+                        <a href="{{ route('search') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Search</a>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
