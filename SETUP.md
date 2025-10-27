@@ -2,15 +2,15 @@
 
 Welcome to your Spotify Tracker Laravel project! This guide will help you get started.
 
-## ✅ What's Already Done
+## What's Already Done
 
-- ✅ Laravel 12 installed
-- ✅ Composer dependencies installed
-- ✅ NPM packages installed
-- ✅ Application key generated
-- ✅ Basic project structure created
+- Laravel 12 installed
+- Composer dependencies installed
+- NPM packages installed
+- Application key generated
+- Basic project structure created
 
-## 🔧 Configuration Steps
+## Configuration Steps
 
 ### 1. Database Configuration
 
@@ -70,7 +70,7 @@ npm run dev
 
 This will compile your CSS and JavaScript files using Vite.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 spotify-tracker/
@@ -96,7 +96,7 @@ spotify-tracker/
 └── vendor/          # Composer dependencies
 ```
 
-## 🚀 Next Steps for Spotify Integration
+## Next Steps for Spotify Integration
 
 ### 1. Register Your Application with Spotify
 
@@ -132,7 +132,7 @@ return [
 ];
 ```
 
-## 📚 Useful Laravel Commands
+## Useful Laravel Commands
 
 ```bash
 # Create a new controller
@@ -162,7 +162,7 @@ php artisan test
 php artisan tinker
 ```
 
-## 🛠️ Development Workflow
+## Development Workflow
 
 1. **Routes**: Define your routes in `routes/web.php` or `routes/api.php`
 2. **Controllers**: Create controllers to handle requests
@@ -170,14 +170,14 @@ php artisan tinker
 4. **Views**: Create Blade templates in `resources/views/`
 5. **Migrations**: Create database tables using migrations
 
-## 📖 Learning Resources
+## Learning Resources
 
 - [Laravel Documentation](https://laravel.com/docs)
 - [Laravel Bootcamp](https://bootcamp.laravel.com/)
 - [Laracasts](https://laracasts.com/) - Video tutorials
 - [Spotify Web API Documentation](https://developer.spotify.com/documentation/web-api)
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### "Could not find driver" error
 Install the PHP database driver:
@@ -201,7 +201,7 @@ nvm use 20
 chmod -R 775 storage bootstrap/cache
 ```
 
-## 🎯 Project Goals
+## Project Goals
 
 This is a Spotify Tracker application where you can:
 - Track your listening history
@@ -209,6 +209,3 @@ This is a Spotify Tracker application where you can:
 - Create playlists
 - Discover new music
 - View statistics about your listening habits
-
-Happy coding! 🎵
-
