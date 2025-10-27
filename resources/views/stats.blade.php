@@ -126,6 +126,17 @@
             visibility: visible;
             opacity: 1;
         }
+        .genre-artists {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+        }
+        .artist-card:hover .genre-artists {
+            max-height: 100px;
+            opacity: 1;
+            margin-top: 0.75rem;
+        }
     </style>
 </head>
 <body class="bg-black text-white min-h-screen overflow-x-hidden">
@@ -211,7 +222,7 @@
         <div class="glass-card rounded-2xl p-8 shadow-2xl">
             <!-- Category Tabs -->
             <div class="flex flex-wrap gap-3 mb-6 border-b border-gray-800 pb-4">
-                <button onclick="switchTab('tracks')" class="tab-button active px-6 py-3 rounded-lg font-semibold flex items-center gap-2" id="tracks-tab">
+                <button onclick="switchTab('tracks')" class="tab-button px-6 py-3 rounded-lg font-semibold text-gray-400 flex items-center gap-2" id="tracks-tab">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
                     </svg>
@@ -223,32 +234,42 @@
                     </svg>
                     Top Artists
                 </button>
-                <button onclick="switchTab('minutes')" class="tab-button px-6 py-3 rounded-lg font-semibold text-gray-400 flex items-center gap-2 relative" id="minutes-tab">
+                <button onclick="switchTab('genres')" class="tab-button px-6 py-3 rounded-lg font-semibold text-gray-400 flex items-center gap-2" id="genres-tab">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Top Genres
+                </button>
+                <button onclick="switchTab('minutes')" class="tab-button px-6 py-3 rounded-lg font-semibold text-gray-400 flex items-center gap-2" id="minutes-tab">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     Minutes Listened
-                    <span class="ml-2 px-2 py-0.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold rounded-full">
-                        SOON
-                    </span>
                 </button>
             </div>
 
             <!-- Time Range Filter -->
-            <div id="time-range-filter" class="flex flex-wrap gap-2 mb-6">
-                <a href="?range=short_term" class="px-4 py-2 rounded-lg text-sm font-medium transition-all {{ request('range', 'medium_term') == 'short_term' ? 'spotify-gradient text-white shadow-lg' : 'bg-gray-800 text-gray-300 hover:bg-gray-700' }}">
+            <div id="time-range-filter" class="flex flex-wrap gap-2 mb-6 items-center">
+                <a href="?range=short_term" class="time-range-link px-4 py-2 rounded-lg text-sm font-medium transition-all {{ request('range', 'medium_term') == 'short_term' ? 'spotify-gradient text-white shadow-lg' : 'bg-gray-800 text-gray-300 hover:bg-gray-700' }}" data-range="short_term">
                     Last Month
                 </a>
-                <a href="?range=medium_term" class="px-4 py-2 rounded-lg text-sm font-medium transition-all {{ request('range', 'medium_term') == 'medium_term' ? 'spotify-gradient text-white shadow-lg' : 'bg-gray-800 text-gray-300 hover:bg-gray-700' }}">
+                <a href="?range=medium_term" class="time-range-link px-4 py-2 rounded-lg text-sm font-medium transition-all {{ request('range', 'medium_term') == 'medium_term' ? 'spotify-gradient text-white shadow-lg' : 'bg-gray-800 text-gray-300 hover:bg-gray-700' }}" data-range="medium_term">
                     Last 6 Months
                 </a>
-                <a href="?range=long_term" class="px-4 py-2 rounded-lg text-sm font-medium transition-all {{ request('range', 'medium_term') == 'long_term' ? 'spotify-gradient text-white shadow-lg' : 'bg-gray-800 text-gray-300 hover:bg-gray-700' }}">
+                <a href="?range=long_term" class="time-range-link px-4 py-2 rounded-lg text-sm font-medium transition-all {{ request('range', 'medium_term') == 'long_term' ? 'spotify-gradient text-white shadow-lg' : 'bg-gray-800 text-gray-300 hover:bg-gray-700' }}" data-range="long_term">
                     All Time
                 </a>
+                <!-- Genre Info Icon (shown only on genres tab) -->
+                <div id="genres-info-icon" class="tooltip-container ml-2" style="display: none;">
+                    <svg class="w-5 h-5 text-gray-500 hover:text-purple-400 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="tooltip-text" style="white-space: normal; width: 400px; line-height: 1.6; padding: 12px 16px;">Top genres are calculated based on your top artists. Each genre shown represents how many of your top artists belong to that genre.</span>
+                </div>
             </div>
 
             <!-- Tracks Content -->
-            <div id="tracks-content" class="tab-content active">
+            <div id="tracks-content" class="tab-content">
                 <div class="space-y-3">
                     @foreach($topTracks->items as $index => $track)
                         <div class="track-card rounded-xl p-4 flex items-center gap-4">
@@ -294,6 +315,35 @@
                         </div>
                     @endforeach
                 </div>
+            </div>
+
+            <!-- Genres Content -->
+            <div id="genres-content" class="tab-content">
+                @if(isset($topGenres) && count($topGenres) > 0)
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        @foreach($topGenres as $genre => $data)
+                            <div class="artist-card rounded-xl p-6 text-center">
+                                <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="font-semibold text-white capitalize mb-2">{{ str_replace('-', ' ', $genre) }}</h3>
+                                <p class="text-xs text-gray-400">{{ $data['count'] }} artist{{ $data['count'] > 1 ? 's' : '' }}</p>
+                                <div class="genre-artists text-xs text-gray-500 leading-relaxed">
+                                    {{ implode(', ', array_slice($data['artists'], 0, 3)) }}{{ count($data['artists']) > 3 ? '...' : '' }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        <p class="text-gray-400 text-lg">No genre data available</p>
+                    </div>
+                @endif
             </div>
 
             <!-- Minutes Content -->
@@ -445,12 +495,42 @@
 
             // Show/hide time range filter based on tab
             const timeRangeFilter = document.getElementById('time-range-filter');
+            const genresInfoIcon = document.getElementById('genres-info-icon');
+            
             if (tab === 'minutes') {
                 timeRangeFilter.style.display = 'none';
+                genresInfoIcon.style.display = 'none';
+            } else if (tab === 'genres') {
+                timeRangeFilter.style.display = 'flex';
+                genresInfoIcon.style.display = 'block';
             } else {
                 timeRangeFilter.style.display = 'flex';
+                genresInfoIcon.style.display = 'none';
             }
+
+            // Update URL to remember the current tab
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tab);
+            window.history.pushState({}, '', url);
         }
+
+        // On page load, check if there's a tab parameter in the URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeTab = urlParams.get('tab') || 'tracks';
+            switchTab(activeTab);
+
+            // Intercept time range filter clicks to preserve current tab
+            document.querySelectorAll('.time-range-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const range = this.getAttribute('data-range');
+                    const currentUrlParams = new URLSearchParams(window.location.search);
+                    const currentTab = currentUrlParams.get('tab') || 'tracks';
+                    window.location.href = `?range=${range}&tab=${currentTab}`;
+                });
+            });
+        });
     </script>
 
     <!-- Autocomplete JavaScript -->

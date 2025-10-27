@@ -192,7 +192,26 @@ class SpotifyController extends Controller
                 }
             }
 
-            return view('stats', compact('topTracks', 'topArtists', 'user', 'listeningMinutes'));
+            // Calculate top genres from top artists with artist names
+            $genreData = [];
+            foreach ($topArtists->items as $artist) {
+                if (isset($artist->genres)) {
+                    foreach ($artist->genres as $genre) {
+                        if (!isset($genreData[$genre])) {
+                            $genreData[$genre] = ['count' => 0, 'artists' => []];
+                        }
+                        $genreData[$genre]['count']++;
+                        $genreData[$genre]['artists'][] = $artist->name;
+                    }
+                }
+            }
+            // Sort by count and get top 20
+            uasort($genreData, function($a, $b) {
+                return $b['count'] - $a['count'];
+            });
+            $topGenres = array_slice($genreData, 0, 20, true);
+
+            return view('stats', compact('topTracks', 'topArtists', 'topGenres', 'user', 'listeningMinutes'));
 
         } catch (\Exception $error) {
             return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $error->getMessage());
