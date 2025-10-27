@@ -19,18 +19,19 @@ Schedule::call(function () {
     }
 })->everyFiveMinutes()->name('track-recently-played');
 
-// Schedule: Aggregate yesterday's data at midnight
-Schedule::call(function () {
-    $users = User::whereNotNull('access_token')->get();
-    foreach ($users as $user) {
-        AggregateDailyListening::dispatch($user, now()->yesterday());
-    }
-})->daily()->name('aggregate-daily-listening');
-
-// Schedule: Aggregate today's data every hour (for real-time updates)
+// Schedule: Aggregate today's data every 5 minutes (for real-time updates)
 Schedule::call(function () {
     $users = User::whereNotNull('access_token')->get();
     foreach ($users as $user) {
         AggregateDailyListening::dispatch($user, now()->today());
     }
-})->hourly()->name('aggregate-today-listening');
+})->everyFiveMinutes()->name('aggregate-today-listening');
+
+// Schedule: Aggregate all historical data at midnight (for weekly, monthly, yearly, all-time stats)
+Schedule::call(function () {
+    $users = User::whereNotNull('access_token')->get();
+    foreach ($users as $user) {
+        // Aggregate yesterday's final data
+        AggregateDailyListening::dispatch($user, now()->yesterday());
+    }
+})->daily()->name('aggregate-daily-listening');

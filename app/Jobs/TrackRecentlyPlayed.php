@@ -6,8 +6,10 @@ use App\Models\User;
 use App\Models\ListeningHistory;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use SpotifyWebAPI\Session;
 use SpotifyWebAPI\SpotifyWebAPI;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
 
 /**
  * Job to track recently played tracks for all users.
@@ -61,13 +63,8 @@ class TrackRecentlyPlayed implements ShouldQueue
             $newTracksCount = 0;
 
             foreach ($recentTracks->items as $item) {
-                // Check if this play already exists
-                $exists = ListeningHistory::where('user_id', $this->user->id)
-                    ->where('track_id', $item->track->id)
-                    ->where('played_at', $item->played_at)
-                    ->exists();
-
-                if (!$exists) {
+                try {
+                    // Try to create the record - will fail silently if duplicate
                     ListeningHistory::create([
                         'user_id' => $this->user->id,
                         'track_id' => $item->track->id,
@@ -81,6 +78,13 @@ class TrackRecentlyPlayed implements ShouldQueue
                     ]);
 
                     $newTracksCount++;
+                } catch (QueryException $error) {
+                    // Ignore duplicate entry errors (constraint violation)
+                    if ($error->getCode() !== '23000') {
+                        // If it's not a constraint violation, log it
+                        Log::error("Error inserting track for user {$this->user->id}: " . $error->getMessage());
+                    }
+                    // Silently skip duplicates
                 }
             }
 
@@ -89,8 +93,8 @@ class TrackRecentlyPlayed implements ShouldQueue
 
             Log::info("Tracked {$newTracksCount} new tracks for user {$this->user->id}");
 
-        } catch (\Exception $e) {
-            Log::error("Error tracking recently played for user {$this->user->id}: " . $e->getMessage());
+        } catch (\Exception $error) {
+            Log::error("Error tracking recently played for user {$this->user->id}: " . $error->getMessage());
         }
     }
 
@@ -100,7 +104,7 @@ class TrackRecentlyPlayed implements ShouldQueue
     protected function refreshToken(): void
     {
         try {
-            $session = new \SpotifyWebAPI\Session(
+            $session = new Session(
                 config('spotify.client_id'),
                 config('spotify.client_secret'),
                 config('spotify.redirect_uri')
@@ -117,9 +121,9 @@ class TrackRecentlyPlayed implements ShouldQueue
 
             Log::info("Successfully refreshed token for user {$this->user->id}");
             
-        } catch (\Exception $e) {
-            Log::error("Failed to refresh token for user {$this->user->id}: " . $e->getMessage());
-            throw $e;
+        } catch (\Exception $error) {
+            Log::error("Failed to refresh token for user {$this->user->id}: " . $error->getMessage());
+            throw $error;
         }
     }
 }

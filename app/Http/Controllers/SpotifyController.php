@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DailyListeningSummary;
 use Illuminate\Http\Request;
 use SpotifyWebAPI\Session;
 use SpotifyWebAPI\SpotifyWebAPI;
@@ -174,17 +175,17 @@ class SpotifyController extends Controller
                 $dbUser = \App\Models\User::find($userId);
                 if ($dbUser) {
                     $listeningMinutes = [
-                        'today' => \App\Models\DailyListeningSummary::where('user_id', $userId)
-                            ->where('date', now()->toDateString())
+                        'today' => DailyListeningSummary::where('user_id', $userId)
+                            ->whereDate('date', now()->toDateString())
                             ->sum('total_minutes'),
-                        'this_week' => \App\Models\DailyListeningSummary::where('user_id', $userId)
-                            ->where('date', '>=', now()->startOfWeek())
+                        'this_week' => DailyListeningSummary::where('user_id', $userId)
+                            ->whereDate('date', '>=', now()->startOfWeek())
                             ->sum('total_minutes'),
-                        'this_month' => \App\Models\DailyListeningSummary::where('user_id', $userId)
-                            ->where('date', '>=', now()->startOfMonth())
+                        'this_month' => DailyListeningSummary::where('user_id', $userId)
+                            ->whereDate('date', '>=', now()->startOfMonth())
                             ->sum('total_minutes'),
-                        'this_year' => \App\Models\DailyListeningSummary::where('user_id', $userId)
-                            ->where('date', '>=', now()->startOfYear())
+                        'this_year' => DailyListeningSummary::where('user_id', $userId)
+                            ->whereDate('date', '>=', now()->startOfYear())
                             ->sum('total_minutes'),
                         'all_time' => $dbUser->total_listening_minutes,
                     ];
@@ -193,8 +194,8 @@ class SpotifyController extends Controller
 
             return view('stats', compact('topTracks', 'topArtists', 'user', 'listeningMinutes'));
 
-        } catch (\Exception $e) {
-            return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $e->getMessage());
+        } catch (\Exception $error) {
+            return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $error->getMessage());
         }
     }
 
@@ -230,8 +231,8 @@ class SpotifyController extends Controller
 
             return view('search', compact('user', 'results'));
 
-        } catch (\Exception $e) {
-            return redirect()->route('home')->with('error', 'Error searching Spotify: ' . $e->getMessage());
+        } catch (\Exception $error) {
+            return redirect()->route('home')->with('error', 'Error searching Spotify: ' . $error->getMessage());
         }
     }
 
@@ -307,8 +308,8 @@ class SpotifyController extends Controller
             $audioFeatures = null;
             try {
                 $audioFeatures = $api->getAudioFeatures($id);
-            } catch (\Exception $e) {
-                \Log::info('Could not fetch audio features: ' . $e->getMessage());
+            } catch (\Exception $error) {
+                \Log::info('Could not fetch audio features: ' . $error->getMessage());
             }
             
             // Get user profile
@@ -316,9 +317,9 @@ class SpotifyController extends Controller
 
             return view('track', compact('track', 'audioFeatures', 'user'));
 
-        } catch (\Exception $e) {
-            \Log::error('Track details error: ' . $e->getMessage());
-            return redirect()->route('search')->with('error', 'Error fetching track details: ' . $e->getMessage());
+        } catch (\Exception $error) {
+            \Log::error('Track details error: ' . $error->getMessage());
+            return redirect()->route('search')->with('error', 'Error fetching track details: ' . $error->getMessage());
         }
     }
 

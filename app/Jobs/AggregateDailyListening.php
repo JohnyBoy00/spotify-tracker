@@ -54,19 +54,32 @@ class AggregateDailyListening implements ShouldQueue
             $uniqueArtists = $history->pluck('artist_name')->unique()->count();
             $uniqueAlbums = $history->pluck('album_name')->filter()->unique()->count();
 
-            // Update or create daily summary
-            DailyListeningSummary::updateOrCreate(
-                [
-                    'user_id' => $this->user->id,
-                    'date' => $this->date->toDateString(),
-                ],
-                [
+            $dateString = $this->date->toDateString();
+
+            // Try to find existing record first
+            $summary = DailyListeningSummary::where('user_id', $this->user->id)
+                ->whereDate('date', $dateString)
+                ->first();
+
+            if ($summary) {
+                // Update existing record
+                $summary->update([
                     'total_minutes' => $totalMinutes,
                     'total_tracks' => $totalTracks,
                     'unique_artists' => $uniqueArtists,
                     'unique_albums' => $uniqueAlbums,
-                ]
-            );
+                ]);
+            } else {
+                // Create new record
+                DailyListeningSummary::create([
+                    'user_id' => $this->user->id,
+                    'date' => $dateString,
+                    'total_minutes' => $totalMinutes,
+                    'total_tracks' => $totalTracks,
+                    'unique_artists' => $uniqueArtists,
+                    'unique_albums' => $uniqueAlbums,
+                ]);
+            }
 
             // Update user's total listening minutes
             $allTimeTotalMinutes = DailyListeningSummary::where('user_id', $this->user->id)
@@ -74,10 +87,10 @@ class AggregateDailyListening implements ShouldQueue
 
             $this->user->update(['total_listening_minutes' => $allTimeTotalMinutes]);
 
-            Log::info("Aggregated daily listening for user {$this->user->id} on {$this->date->toDateString()}: {$totalMinutes} minutes, {$totalTracks} tracks");
+            Log::info("Aggregated daily listening for user {$this->user->id} on {$dateString}: {$totalMinutes} minutes, {$totalTracks} tracks");
 
-        } catch (\Exception $e) {
-            Log::error("Error aggregating daily listening for user {$this->user->id}: " . $e->getMessage());
+        } catch (\Exception $error) {
+            Log::error("Error aggregating daily listening for user {$this->user->id}: " . $error->getMessage());
         }
     }
 }
