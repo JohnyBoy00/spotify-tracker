@@ -100,6 +100,32 @@
         .autocomplete-item:last-child {
             border-bottom: none !important;
         }
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: opacity 0.2s, visibility 0.2s;
+            pointer-events: none;
+        }
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-black text-white min-h-screen overflow-x-hidden">
@@ -276,31 +302,71 @@
                     <!-- Real Stats Grid -->
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div class="bg-gradient-to-br from-cyan-500/10 to-blue-600/10 rounded-xl p-6 border border-cyan-500/20">
-                            <p class="text-gray-400 text-sm mb-2">Today</p>
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-gray-400 text-sm">Today</p>
+                                <div class="tooltip-container">
+                                    <svg class="w-4 h-4 text-gray-500 hover:text-cyan-400 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="tooltip-text">Updates every 5 minutes</span>
+                                </div>
+                            </div>
                             <p class="text-4xl font-bold text-cyan-400">{{ number_format($listeningMinutes['today']) }}</p>
                             <p class="text-xs text-gray-500 mt-2">minutes</p>
                             <p class="text-xs text-cyan-400/70 mt-1">≈ {{ round($listeningMinutes['today'] / 60, 1) }} hours</p>
                         </div>
                         <div class="bg-gradient-to-br from-green-500/10 to-emerald-600/10 rounded-xl p-6 border border-green-500/20">
-                            <p class="text-gray-400 text-sm mb-2">This Week</p>
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-gray-400 text-sm">This Week</p>
+                                <div class="tooltip-container">
+                                    <svg class="w-4 h-4 text-gray-500 hover:text-green-400 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="tooltip-text">Updates every 5 minutes</span>
+                                </div>
+                            </div>
                             <p class="text-4xl font-bold text-green-400">{{ number_format($listeningMinutes['this_week']) }}</p>
                             <p class="text-xs text-gray-500 mt-2">minutes</p>
                             <p class="text-xs text-green-400/70 mt-1">≈ {{ round($listeningMinutes['this_week'] / 60, 1) }} hours</p>
                         </div>
                         <div class="bg-gradient-to-br from-blue-500/10 to-cyan-600/10 rounded-xl p-6 border border-blue-500/20">
-                            <p class="text-gray-400 text-sm mb-2">This Month</p>
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-gray-400 text-sm">This Month</p>
+                                <div class="tooltip-container">
+                                    <svg class="w-4 h-4 text-gray-500 hover:text-blue-400 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="tooltip-text">Updates every 5 minutes</span>
+                                </div>
+                            </div>
                             <p class="text-4xl font-bold text-blue-400">{{ number_format($listeningMinutes['this_month']) }}</p>
                             <p class="text-xs text-gray-500 mt-2">minutes</p>
                             <p class="text-xs text-blue-400/70 mt-1">≈ {{ round($listeningMinutes['this_month'] / 60, 1) }} hours</p>
                         </div>
                         <div class="bg-gradient-to-br from-purple-500/10 to-pink-600/10 rounded-xl p-6 border border-purple-500/20">
-                            <p class="text-gray-400 text-sm mb-2">This Year</p>
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-gray-400 text-sm">This Year</p>
+                                <div class="tooltip-container">
+                                    <svg class="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="tooltip-text">Updates daily at midnight</span>
+                                </div>
+                            </div>
                             <p class="text-4xl font-bold text-purple-400">{{ number_format($listeningMinutes['this_year']) }}</p>
                             <p class="text-xs text-gray-500 mt-2">minutes</p>
                             <p class="text-xs text-purple-400/70 mt-1">≈ {{ round($listeningMinutes['this_year'] / 60, 1) }} hours</p>
                         </div>
                         <div class="bg-gradient-to-br from-yellow-500/10 to-orange-600/10 rounded-xl p-6 border border-yellow-500/20">
-                            <p class="text-gray-400 text-sm mb-2">All Time</p>
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-gray-400 text-sm">All Time</p>
+                                <div class="tooltip-container">
+                                    <svg class="w-4 h-4 text-gray-500 hover:text-yellow-400 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="tooltip-text">Updates daily at midnight</span>
+                                </div>
+                            </div>
                             <p class="text-4xl font-bold text-yellow-400">{{ number_format($listeningMinutes['all_time']) }}</p>
                             <p class="text-xs text-gray-500 mt-2">minutes</p>
                             <p class="text-xs text-yellow-400/70 mt-1">≈ {{ round($listeningMinutes['all_time'] / 60, 1) }} hours</p>
