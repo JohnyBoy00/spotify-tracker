@@ -21,6 +21,14 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'spotify_id',
+        'spotify_display_name',
+        'spotify_email',
+        'access_token',
+        'refresh_token',
+        'token_expires_at',
+        'total_listening_minutes',
+        'last_tracked_at',
     ];
 
     /**
@@ -31,6 +39,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'access_token',
+        'refresh_token',
     ];
 
     /**
@@ -43,6 +53,25 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'token_expires_at' => 'datetime',
+            'last_tracked_at' => 'datetime',
+            'total_listening_minutes' => 'integer',
         ];
+    }
+
+    /**
+     * Get the listening history for the user.
+     */
+    public function listeningHistory()
+    {
+        return $this->hasMany(ListeningHistory::class);
+    }
+
+    /**
+     * Get the daily listening summaries for the user.
+     */
+    public function dailyListeningSummaries()
+    {
+        return $this->hasMany(DailyListeningSummary::class);
     }
 }

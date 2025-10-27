@@ -272,43 +272,88 @@
 
             <!-- Minutes Content -->
             <div id="minutes-content" class="tab-content">
-                <!-- Preview Stats Grid -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 opacity-50 pointer-events-none">
-                    <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
-                        <p class="text-gray-500 text-sm mb-2">This Week</p>
-                        <p class="text-4xl font-bold text-gray-600">---</p>
-                        <p class="text-xs text-gray-600 mt-2">minutes</p>
+                @if($listeningMinutes && ($listeningMinutes['this_week'] > 0 || $listeningMinutes['this_month'] > 0 || $listeningMinutes['this_year'] > 0 || $listeningMinutes['all_time'] > 0))
+                    <!-- Real Stats Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-gradient-to-br from-green-500/10 to-emerald-600/10 rounded-xl p-6 border border-green-500/20">
+                            <p class="text-gray-400 text-sm mb-2">This Week</p>
+                            <p class="text-4xl font-bold text-green-400">{{ number_format($listeningMinutes['this_week']) }}</p>
+                            <p class="text-xs text-gray-500 mt-2">minutes</p>
+                            <p class="text-xs text-green-400/70 mt-1">≈ {{ round($listeningMinutes['this_week'] / 60, 1) }} hours</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-500/10 to-cyan-600/10 rounded-xl p-6 border border-blue-500/20">
+                            <p class="text-gray-400 text-sm mb-2">This Month</p>
+                            <p class="text-4xl font-bold text-blue-400">{{ number_format($listeningMinutes['this_month']) }}</p>
+                            <p class="text-xs text-gray-500 mt-2">minutes</p>
+                            <p class="text-xs text-blue-400/70 mt-1">≈ {{ round($listeningMinutes['this_month'] / 60, 1) }} hours</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-500/10 to-pink-600/10 rounded-xl p-6 border border-purple-500/20">
+                            <p class="text-gray-400 text-sm mb-2">This Year</p>
+                            <p class="text-4xl font-bold text-purple-400">{{ number_format($listeningMinutes['this_year']) }}</p>
+                            <p class="text-xs text-gray-500 mt-2">minutes</p>
+                            <p class="text-xs text-purple-400/70 mt-1">≈ {{ round($listeningMinutes['this_year'] / 60, 1) }} hours</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-yellow-500/10 to-orange-600/10 rounded-xl p-6 border border-yellow-500/20">
+                            <p class="text-gray-400 text-sm mb-2">All Time</p>
+                            <p class="text-4xl font-bold text-yellow-400">{{ number_format($listeningMinutes['all_time']) }}</p>
+                            <p class="text-xs text-gray-500 mt-2">minutes</p>
+                            <p class="text-xs text-yellow-400/70 mt-1">≈ {{ round($listeningMinutes['all_time'] / 60, 1) }} hours</p>
+                        </div>
                     </div>
-                    <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
-                        <p class="text-gray-500 text-sm mb-2">This Month</p>
-                        <p class="text-4xl font-bold text-gray-600">---</p>
-                        <p class="text-xs text-gray-600 mt-2">minutes</p>
-                    </div>
-                    <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
-                        <p class="text-gray-500 text-sm mb-2">This Year</p>
-                        <p class="text-4xl font-bold text-gray-600">---</p>
-                        <p class="text-xs text-gray-600 mt-2">minutes</p>
-                    </div>
-                    <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
-                        <p class="text-gray-500 text-sm mb-2">All Time</p>
-                        <p class="text-4xl font-bold text-gray-600">---</p>
-                        <p class="text-xs text-gray-600 mt-2">minutes</p>
-                    </div>
-                </div>
 
-                <!-- Info Message -->
-                <div class="flex items-start gap-4 bg-blue-500/10 border border-blue-500/30 rounded-xl p-6">
-                    <svg class="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                    </svg>
-                    <div>
-                        <p class="text-blue-200 font-semibold mb-2">Feature in Development</p>
-                        <p class="text-blue-300/90 text-sm leading-relaxed">
-                            This feature will track your listening time across all periods. Since Spotify doesn't provide this data directly, 
-                            we'll need to build custom tracking that monitors your playback activity. Stay tuned for updates!
-                        </p>
+                    <!-- Success Message -->
+                    <div class="flex items-start gap-4 bg-green-500/10 border border-green-500/30 rounded-xl p-6">
+                        <svg class="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <p class="text-green-200 font-semibold mb-2">Tracking Active! 🎵</p>
+                            <p class="text-green-300/90 text-sm leading-relaxed">
+                                Your listening data is being tracked. Run <code class="bg-black/30 px-2 py-0.5 rounded text-xs">php artisan spotify:track</code> 
+                                to manually update your stats, or they'll be updated automatically when scheduled tasks are running.
+                            </p>
+                        </div>
                     </div>
-                </div>
+                @else
+                    <!-- Preview Stats Grid (No Data Yet) -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 opacity-50 pointer-events-none">
+                        <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
+                            <p class="text-gray-500 text-sm mb-2">This Week</p>
+                            <p class="text-4xl font-bold text-gray-600">0</p>
+                            <p class="text-xs text-gray-600 mt-2">minutes</p>
+                        </div>
+                        <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
+                            <p class="text-gray-500 text-sm mb-2">This Month</p>
+                            <p class="text-4xl font-bold text-gray-600">0</p>
+                            <p class="text-xs text-gray-600 mt-2">minutes</p>
+                        </div>
+                        <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
+                            <p class="text-gray-500 text-sm mb-2">This Year</p>
+                            <p class="text-4xl font-bold text-gray-600">0</p>
+                            <p class="text-xs text-gray-600 mt-2">minutes</p>
+                        </div>
+                        <div class="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
+                            <p class="text-gray-500 text-sm mb-2">All Time</p>
+                            <p class="text-4xl font-bold text-gray-600">0</p>
+                            <p class="text-xs text-gray-600 mt-2">minutes</p>
+                        </div>
+                    </div>
+
+                    <!-- Getting Started Message -->
+                    <div class="flex items-start gap-4 bg-blue-500/10 border border-blue-500/30 rounded-xl p-6">
+                        <svg class="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <p class="text-blue-200 font-semibold mb-2">No Listening Data Yet</p>
+                            <p class="text-blue-300/90 text-sm leading-relaxed">
+                                Your listening minutes will appear here once tracking begins. Since Spotify doesn't provide 
+                                this data directly, we track it by monitoring your playback activity over time. Start listening 
+                                to music on Spotify, and your stats will automatically populate here!
+                            </p>
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
 

@@ -55,10 +55,30 @@ class SpotifyController extends Controller
             $accessToken = $session->getAccessToken();
             $refreshToken = $session->getRefreshToken();
 
-            // Store tokens in session (you might want to store in database later)
+            // Get user profile from Spotify
+            $api = new SpotifyWebAPI();
+            $api->setAccessToken($accessToken);
+            $spotifyUser = $api->me();
+
+            // Create or update user in database
+            $user = \App\Models\User::updateOrCreate(
+                ['spotify_id' => $spotifyUser->id],
+                [
+                    'name' => $spotifyUser->display_name,
+                    'email' => $spotifyUser->email ?? null,
+                    'spotify_display_name' => $spotifyUser->display_name,
+                    'spotify_email' => $spotifyUser->email ?? null,
+                    'access_token' => $accessToken,
+                    'refresh_token' => $refreshToken,
+                    'token_expires_at' => now()->addHours(1), // Spotify tokens expire after 1 hour
+                ]
+            );
+
+            // Store tokens in session for immediate use
             session([
                 'spotify_access_token' => $accessToken,
                 'spotify_refresh_token' => $refreshToken,
+                'spotify_user_id' => $user->id,
             ]);
 
             return redirect()->route('dashboard')->with('success', 'Successfully connected to Spotify!');
@@ -114,6 +134,7 @@ class SpotifyController extends Controller
     public function stats(Request $request)
     {
         $accessToken = session('spotify_access_token');
+        $userId = session('spotify_user_id');
 
         if (!$accessToken) {
             return redirect()->route('home')->with('error', 'Please connect to Spotify first.');
@@ -147,7 +168,27 @@ class SpotifyController extends Controller
             // Get user profile
             $user = $api->me();
 
-            return view('stats', compact('topTracks', 'topArtists', 'user'));
+            // Get listening minutes stats from database
+            $listeningMinutes = null;
+            if ($userId) {
+                $dbUser = \App\Models\User::find($userId);
+                if ($dbUser) {
+                    $listeningMinutes = [
+                        'this_week' => \App\Models\DailyListeningSummary::where('user_id', $userId)
+                            ->where('date', '>=', now()->startOfWeek())
+                            ->sum('total_minutes'),
+                        'this_month' => \App\Models\DailyListeningSummary::where('user_id', $userId)
+                            ->where('date', '>=', now()->startOfMonth())
+                            ->sum('total_minutes'),
+                        'this_year' => \App\Models\DailyListeningSummary::where('user_id', $userId)
+                            ->where('date', '>=', now()->startOfYear())
+                            ->sum('total_minutes'),
+                        'all_time' => $dbUser->total_listening_minutes,
+                    ];
+                }
+            }
+
+            return view('stats', compact('topTracks', 'topArtists', 'user', 'listeningMinutes'));
 
         } catch (\Exception $e) {
             return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $e->getMessage());
