@@ -174,6 +174,9 @@ class SpotifyController extends Controller
                 $dbUser = \App\Models\User::find($userId);
                 if ($dbUser) {
                     $listeningMinutes = [
+                        'today' => \App\Models\DailyListeningSummary::where('user_id', $userId)
+                            ->where('date', now()->toDateString())
+                            ->sum('total_minutes'),
                         'this_week' => \App\Models\DailyListeningSummary::where('user_id', $userId)
                             ->where('date', '>=', now()->startOfWeek())
                             ->sum('total_minutes'),

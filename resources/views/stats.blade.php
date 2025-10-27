@@ -272,9 +272,15 @@
 
             <!-- Minutes Content -->
             <div id="minutes-content" class="tab-content">
-                @if($listeningMinutes && ($listeningMinutes['this_week'] > 0 || $listeningMinutes['this_month'] > 0 || $listeningMinutes['this_year'] > 0 || $listeningMinutes['all_time'] > 0))
+                @if($listeningMinutes && ($listeningMinutes['today'] > 0 || $listeningMinutes['this_week'] > 0 || $listeningMinutes['this_month'] > 0 || $listeningMinutes['this_year'] > 0 || $listeningMinutes['all_time'] > 0))
                     <!-- Real Stats Grid -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div class="bg-gradient-to-br from-cyan-500/10 to-blue-600/10 rounded-xl p-6 border border-cyan-500/20">
+                            <p class="text-gray-400 text-sm mb-2">Today</p>
+                            <p class="text-4xl font-bold text-cyan-400">{{ number_format($listeningMinutes['today']) }}</p>
+                            <p class="text-xs text-gray-500 mt-2">minutes</p>
+                            <p class="text-xs text-cyan-400/70 mt-1">≈ {{ round($listeningMinutes['today'] / 60, 1) }} hours</p>
+                        </div>
                         <div class="bg-gradient-to-br from-green-500/10 to-emerald-600/10 rounded-xl p-6 border border-green-500/20">
                             <p class="text-gray-400 text-sm mb-2">This Week</p>
                             <p class="text-4xl font-bold text-green-400">{{ number_format($listeningMinutes['this_week']) }}</p>
@@ -298,20 +304,6 @@
                             <p class="text-4xl font-bold text-yellow-400">{{ number_format($listeningMinutes['all_time']) }}</p>
                             <p class="text-xs text-gray-500 mt-2">minutes</p>
                             <p class="text-xs text-yellow-400/70 mt-1">≈ {{ round($listeningMinutes['all_time'] / 60, 1) }} hours</p>
-                        </div>
-                    </div>
-
-                    <!-- Success Message -->
-                    <div class="flex items-start gap-4 bg-green-500/10 border border-green-500/30 rounded-xl p-6">
-                        <svg class="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                        </svg>
-                        <div>
-                            <p class="text-green-200 font-semibold mb-2">Tracking Active! 🎵</p>
-                            <p class="text-green-300/90 text-sm leading-relaxed">
-                                Your listening data is being tracked. Run <code class="bg-black/30 px-2 py-0.5 rounded text-xs">php artisan spotify:track</code> 
-                                to manually update your stats, or they'll be updated automatically when scheduled tasks are running.
-                            </p>
                         </div>
                     </div>
                 @else
