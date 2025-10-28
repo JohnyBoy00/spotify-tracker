@@ -171,6 +171,7 @@ class SpotifyController extends Controller
 
             // Get listening minutes stats from database
             $listeningMinutes = null;
+            $weeklyChartData = [];
             if ($userId) {
                 $dbUser = \App\Models\User::find($userId);
                 if ($dbUser) {
@@ -189,6 +190,32 @@ class SpotifyController extends Controller
                             ->sum('total_minutes'),
                         'all_time' => $dbUser->total_listening_minutes,
                     ];
+
+                    // Get daily data for the current week (Monday to Sunday)
+                    $startOfWeek = now()->startOfWeek(); // Monday
+                    $endOfWeek = now()->endOfWeek(); // Sunday
+                    
+                    $weeklyData = DailyListeningSummary::where('user_id', $userId)
+                        ->whereBetween('date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
+                        ->orderBy('date', 'asc')
+                        ->get();
+
+                    // Create array with all 7 days (Monday to Sunday, fill missing days with 0)
+                    for ($i = 0; $i < 7; $i++) {
+                        $date = now()->startOfWeek()->addDays($i);
+                        $dateString = $date->toDateString();
+                        
+                        // Find matching data by comparing date strings
+                        $dayData = $weeklyData->first(function($item) use ($dateString) {
+                            return \Carbon\Carbon::parse($item->date)->toDateString() === $dateString;
+                        });
+                        
+                        $weeklyChartData[] = [
+                            'label' => $date->format('D'), // Mon, Tue, Wed, etc.
+                            'y' => $dayData ? (int)$dayData->total_minutes : 0,
+                            'date' => $date->format('M j'), // Jan 1, etc.
+                        ];
+                    }
                 }
             }
 
@@ -211,7 +238,7 @@ class SpotifyController extends Controller
             });
             $topGenres = array_slice($genreData, 0, 20, true);
 
-            return view('stats', compact('topTracks', 'topArtists', 'topGenres', 'user', 'listeningMinutes'));
+            return view('stats', compact('topTracks', 'topArtists', 'topGenres', 'user', 'listeningMinutes', 'weeklyChartData'));
 
         } catch (\Exception $error) {
             return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $error->getMessage());

@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
     <style>
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -422,6 +423,21 @@
                             <p class="text-xs text-yellow-400/70 mt-1">≈ {{ round($listeningMinutes['all_time'] / 60, 1) }} hours</p>
                         </div>
                     </div>
+
+                    <!-- Weekly Chart -->
+                    @if(!empty($weeklyChartData))
+                    <div class="mt-8">
+                        <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                            <svg class="w-6 h-6 mr-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            This Week's Listening Activity
+                        </h3>
+                        <div class="glass-card rounded-xl p-6">
+                            <div id="weeklyChart" style="height: 350px; width: 100%;"></div>
+                        </div>
+                    </div>
+                    @endif
                 @else
                     <!-- Preview Stats Grid (No Data Yet) -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 opacity-50 pointer-events-none">
@@ -629,6 +645,68 @@
             }
         });
     </script>
+
+    <!-- CanvasJS Chart Script -->
+    @if(!empty($weeklyChartData))
+    <script>
+        window.addEventListener('load', function () {
+            var chart = new CanvasJS.Chart("weeklyChart", {
+                backgroundColor: "transparent",
+                animationEnabled: true,
+                theme: "dark2",
+                title: {
+                    text: "",
+                },
+                axisY: {
+                    title: "Minutes Listened",
+                    titleFontColor: "#9CA3AF",
+                    titleFontSize: 14,
+                    titleFontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                    labelFontColor: "#9CA3AF",
+                    labelFontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                    gridColor: "#374151",
+                    gridThickness: 1,
+                    minimum: 0,
+                    includeZero: true,
+                },
+                axisX: {
+                    labelFontColor: "#9CA3AF",
+                    labelFontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                    labelFontSize: 13,
+                    lineColor: "#374151",
+                    tickColor: "#374151",
+                    interval: 1,
+                },
+                toolTip: {
+                    backgroundColor: "#1F2937",
+                    borderColor: "#1DB954",
+                    borderThickness: 2,
+                    fontColor: "#F3F4F6",
+                    fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                    fontSize: 14,
+                    cornerRadius: 8,
+                    contentFormatter: function (e) {
+                        var entry = e.entries[0];
+                        var hours = (entry.dataPoint.y / 60).toFixed(1);
+                        return "<div style='padding: 4px;'>" +
+                               "<strong style='color: #1DB954;'>" + entry.dataPoint.date + "</strong><br/>" +
+                               "<span style='color: #F3F4F6;'>" + entry.dataPoint.y + " minutes</span><br/>" +
+                               "<span style='color: #9CA3AF;'>(" + hours + " hours)</span>" +
+                               "</div>";
+                    }
+                },
+                data: [{
+                    type: "column",
+                    color: "#1DB954",
+                    indexLabelFontColor: "#9CA3AF",
+                    indexLabelFontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                    dataPoints: @json($weeklyChartData)
+                }]
+            });
+            chart.render();
+        });
+    </script>
+    @endif
 </body>
 </html>
 
