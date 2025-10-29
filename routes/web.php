@@ -27,5 +27,10 @@ Route::get('/track/{id}', [SpotifyController::class, 'trackDetails'])->name('tra
 // API endpoint for autocomplete search
 Route::get('/api/search', [SpotifyController::class, 'apiSearch'])->name('api.search');
 
+// Import history routes
+Route::post('/preview-history', [SpotifyController::class, 'previewHistory'])->name('preview.history');
+Route::post('/import-history', [SpotifyController::class, 'importHistory'])->name('import.history');
+Route::get('/import-status', [SpotifyController::class, 'importStatus'])->name('import.status');
+
 // Logout
 Route::get('/logout', [SpotifyController::class, 'logout'])->name('spotify.logout');

@@ -370,6 +370,349 @@ class SpotifyController extends Controller
     }
 
     /**
+     * Import Spotify Extended Streaming History JSON files.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function importHistory(Request $request)
+    {
+        $userId = session('spotify_user_id');
+        
+        if (!$userId) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        // Validate files
+        if (!$request->hasFile('history_files')) {
+            return response()->json(['error' => 'No files uploaded'], 422);
+        }
+
+        $files = $request->file('history_files');
+        
+        // Validate each file
+        foreach ($files as $file) {
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'Invalid file upload'], 422);
+            }
+            
+            $extension = strtolower($file->getClientOriginalExtension());
+            if ($extension !== 'json') {
+                return response()->json(['error' => 'All files must be JSON format'], 422);
+            }
+            
+            // Check file size (25MB = 26214400 bytes)
+            if ($file->getSize() > 26214400) {
+                return response()->json(['error' => 'File too large. Maximum size is 25MB'], 422);
+            }
+        }
+        
+        $totalImported = 0;
+        $totalSkipped = 0;
+        $errors = [];
+
+        foreach ($files as $file) {
+            try {
+                $jsonContent = file_get_contents($file->getRealPath());
+                $data = json_decode($jsonContent, true);
+
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $errors[] = $file->getClientOriginalName() . ': Invalid JSON - ' . json_last_error_msg();
+                    continue;
+                }
+
+                if (!is_array($data)) {
+                    $errors[] = $file->getClientOriginalName() . ': Must be an array';
+                    continue;
+                }
+
+                // Process in chunks
+                $chunks = array_chunk($data, 1000);
+                $imported = 0;
+                $skipped = 0;
+
+                foreach ($chunks as $chunk) {
+                    $records = [];
+                    
+                    foreach ($chunk as $entry) {
+                        try {
+                            // Skip if essential data is missing
+                            if (empty($entry['ts']) || !isset($entry['ms_played'])) {
+                                $skipped++;
+                                continue;
+                            }
+
+                            // Only import audio tracks
+                            if (empty($entry['master_metadata_track_name']) || empty($entry['spotify_track_uri'])) {
+                                $skipped++;
+                                continue;
+                            }
+
+                            $playedAt = \Carbon\Carbon::parse($entry['ts']);
+
+                            // Check if exists
+                            $exists = \App\Models\ImportedStreamingHistory::where('user_id', $userId)
+                                ->where('played_at', $playedAt)
+                                ->where('spotify_track_uri', $entry['spotify_track_uri'])
+                                ->exists();
+
+                            if ($exists) {
+                                $skipped++;
+                                continue;
+                            }
+
+                            $records[] = [
+                                'user_id' => $userId,
+                                'played_at' => $playedAt,
+                                'platform' => $entry['platform'] ?? null,
+                                'ms_played' => $entry['ms_played'],
+                                'track_name' => $entry['master_metadata_track_name'] ?? null,
+                                'artist_name' => $entry['master_metadata_album_artist_name'] ?? null,
+                                'album_name' => $entry['master_metadata_album_album_name'] ?? null,
+                                'spotify_track_uri' => $entry['spotify_track_uri'] ?? null,
+                                'skipped' => $entry['skipped'] ?? false,
+                                'reason_start' => $entry['reason_start'] ?? null,
+                                'reason_end' => $entry['reason_end'] ?? null,
+                                'shuffle' => $entry['shuffle'] ?? false,
+                                'offline' => $entry['offline'] ?? false,
+                                'incognito_mode' => $entry['incognito_mode'] ?? false,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+
+                            $imported++;
+
+                        } catch (\Exception $error) {
+                            // Skip this entry
+                        }
+                    }
+
+                    // Bulk insert
+                    if (!empty($records)) {
+                        \App\Models\ImportedStreamingHistory::insert($records);
+                    }
+                }
+
+                $totalImported += $imported;
+                $totalSkipped += $skipped;
+
+            } catch (\Exception $error) {
+                $errors[] = $file->getClientOriginalName() . ': ' . $error->getMessage();
+            }
+        }
+
+        // Update user's total listening minutes (combine imported + current tracking)
+        $user = \App\Models\User::find($userId);
+        if ($user) {
+            // Get imported minutes
+            $importedMinutes = \App\Models\ImportedStreamingHistory::where('user_id', $userId)
+                ->sum('ms_played') / 1000 / 60;
+            
+            // Get current tracking minutes
+            $currentMinutes = \App\Models\ListeningHistory::where('user_id', $userId)
+                ->sum('listened_ms') / 1000 / 60;
+            
+            // Combine both
+            $user->total_listening_minutes = round($importedMinutes + $currentMinutes);
+            $user->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'imported' => $totalImported,
+            'skipped' => $totalSkipped,
+            'errors' => $errors,
+            'total_minutes' => $user ? $user->total_listening_minutes : 0,
+        ]);
+    }
+
+    /**
+     * Preview/analyze JSON files without importing them.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function previewHistory(Request $request)
+    {
+        $userId = session('spotify_user_id');
+        
+        if (!$userId) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        // Validate files
+        if (!$request->hasFile('history_files')) {
+            return response()->json(['error' => 'No files uploaded'], 422);
+        }
+
+        $files = $request->file('history_files');
+        
+        // Validate each file
+        foreach ($files as $file) {
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'Invalid file upload'], 422);
+            }
+            
+            $extension = strtolower($file->getClientOriginalExtension());
+            if ($extension !== 'json') {
+                return response()->json(['error' => 'All files must be JSON format'], 422);
+            }
+            
+            // Check file size (25MB = 26214400 bytes)
+            if ($file->getSize() > 26214400) {
+                return response()->json(['error' => 'File too large. Maximum size is 25MB'], 422);
+            }
+        }
+
+        $files = $request->file('history_files');
+        
+        $stats = [
+            'total_tracks' => 0,
+            'total_minutes' => 0,
+            'total_hours' => 0,
+            'skipped_tracks' => 0,
+            'completed_tracks' => 0,
+            'oldest_date' => null,
+            'newest_date' => null,
+            'top_artists' => [],
+            'top_tracks' => [],
+            'files_processed' => 0,
+            'errors' => []
+        ];
+
+        foreach ($files as $file) {
+            try {
+                $jsonContent = file_get_contents($file->getRealPath());
+                $data = json_decode($jsonContent, true);
+
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $stats['errors'][] = $file->getClientOriginalName() . ': Invalid JSON';
+                    continue;
+                }
+
+                if (!is_array($data)) {
+                    $stats['errors'][] = $file->getClientOriginalName() . ': Must be an array';
+                    continue;
+                }
+
+                $artistCounts = [];
+                $trackCounts = [];
+
+                foreach ($data as $entry) {
+                    // Only count audio tracks
+                    if (empty($entry['master_metadata_track_name']) || empty($entry['spotify_track_uri'])) {
+                        continue;
+                    }
+
+                    $stats['total_tracks']++;
+                    $stats['total_minutes'] += ($entry['ms_played'] ?? 0) / 1000 / 60;
+
+                    if (isset($entry['skipped']) && $entry['skipped']) {
+                        $stats['skipped_tracks']++;
+                    } else {
+                        $stats['completed_tracks']++;
+                    }
+
+                    // Track dates
+                    if (isset($entry['ts'])) {
+                        $date = $entry['ts'];
+                        if (!$stats['oldest_date'] || $date < $stats['oldest_date']) {
+                            $stats['oldest_date'] = $date;
+                        }
+                        if (!$stats['newest_date'] || $date > $stats['newest_date']) {
+                            $stats['newest_date'] = $date;
+                        }
+                    }
+
+                    // Count artists and tracks
+                    $artistName = $entry['master_metadata_album_artist_name'] ?? 'Unknown';
+                    $trackName = $entry['master_metadata_track_name'] ?? 'Unknown';
+                    
+                    if (!isset($artistCounts[$artistName])) {
+                        $artistCounts[$artistName] = 0;
+                    }
+                    $artistCounts[$artistName]++;
+
+                    $trackKey = $trackName . ' - ' . $artistName;
+                    if (!isset($trackCounts[$trackKey])) {
+                        $trackCounts[$trackKey] = 0;
+                    }
+                    $trackCounts[$trackKey]++;
+                }
+
+                // Get top 10 artists and tracks
+                arsort($artistCounts);
+                arsort($trackCounts);
+                
+                $stats['top_artists'] = array_merge($stats['top_artists'], array_slice($artistCounts, 0, 10, true));
+                $stats['top_tracks'] = array_merge($stats['top_tracks'], array_slice($trackCounts, 0, 10, true));
+
+                $stats['files_processed']++;
+
+            } catch (\Exception $error) {
+                $stats['errors'][] = $file->getClientOriginalName() . ': ' . $error->getMessage();
+            }
+        }
+
+        // Recalculate top artists and tracks from combined data
+        if (!empty($stats['top_artists'])) {
+            arsort($stats['top_artists']);
+            $stats['top_artists'] = array_slice($stats['top_artists'], 0, 10, true);
+        }
+        if (!empty($stats['top_tracks'])) {
+            arsort($stats['top_tracks']);
+            $stats['top_tracks'] = array_slice($stats['top_tracks'], 0, 10, true);
+        }
+
+        $stats['total_minutes'] = round($stats['total_minutes']);
+        $stats['total_hours'] = round($stats['total_minutes'] / 60, 1);
+        
+        // Format dates
+        if ($stats['oldest_date']) {
+            $stats['oldest_date'] = \Carbon\Carbon::parse($stats['oldest_date'])->format('Y-m-d');
+        }
+        if ($stats['newest_date']) {
+            $stats['newest_date'] = \Carbon\Carbon::parse($stats['newest_date'])->format('Y-m-d');
+        }
+
+        return response()->json($stats);
+    }
+
+    /**
+     * Get import status and statistics.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function importStatus()
+    {
+        $userId = session('spotify_user_id');
+        
+        if (!$userId) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        $totalEntries = \App\Models\ImportedStreamingHistory::where('user_id', $userId)->count();
+        $totalMinutes = \App\Models\ImportedStreamingHistory::where('user_id', $userId)
+            ->sum('ms_played') / 1000 / 60;
+        
+        $oldestEntry = \App\Models\ImportedStreamingHistory::where('user_id', $userId)
+            ->orderBy('played_at', 'asc')
+            ->first();
+        
+        $newestEntry = \App\Models\ImportedStreamingHistory::where('user_id', $userId)
+            ->orderBy('played_at', 'desc')
+            ->first();
+
+        return response()->json([
+            'total_entries' => $totalEntries,
+            'total_minutes' => round($totalMinutes),
+            'total_hours' => round($totalMinutes / 60, 1),
+            'oldest_entry' => $oldestEntry ? $oldestEntry->played_at->format('Y-m-d') : null,
+            'newest_entry' => $newestEntry ? $newestEntry->played_at->format('Y-m-d') : null,
+        ]);
+    }
+
+    /**
      * Logout and clear Spotify session.
      *
      * @return \Illuminate\Http\RedirectResponse

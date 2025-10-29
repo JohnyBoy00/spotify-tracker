@@ -307,7 +307,6 @@
                     dropdown.classList.add('show');
                 }
             } catch (error) {
-                console.error('Search error:', error);
                 currentResults = [];
                 dropdown.innerHTML = '<div class="p-4 text-red-400 text-center text-sm">Error searching</div>';
                 dropdown.classList.add('show');

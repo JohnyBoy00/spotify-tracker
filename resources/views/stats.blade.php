@@ -438,6 +438,64 @@
                         </div>
                     </div>
                     @endif
+
+                    <!-- Import History Section -->
+                    <div class="glass-card rounded-xl p-6 mt-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold text-white flex items-center">
+                                    <svg class="w-6 h-6 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                    Import Spotify History
+                                </h3>
+                                <p class="text-gray-400 text-sm mt-1">Upload your Extended Streaming History JSON files from Spotify</p>
+                            </div>
+                            <button id="importStatusBtn" class="text-green-400 hover:text-green-300 transition-colors text-sm flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                                </svg>
+                                Imported Data
+                            </button>
+                        </div>
+                        
+                        <form id="importForm" enctype="multipart/form-data">
+                            @csrf
+                            <div class="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-purple-500 transition-colors cursor-pointer" id="dropZone">
+                                <input type="file" id="historyFiles" name="history_files[]" multiple accept=".json" class="hidden">
+                                <svg class="w-12 h-12 text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <p class="text-gray-300 mb-2">Click to browse or drag and drop your JSON files here</p>
+                                <p class="text-gray-500 text-sm">You can select multiple files at once</p>
+                            </div>
+                <div id="fileList" class="mt-4 hidden"></div>
+                <div class="mt-4 grid grid-cols-2 gap-4 hidden" id="actionButtons">
+                    <button type="button" id="previewBtn" class="bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <span id="previewBtnText">Preview Stats</span>
+                    </button>
+                    <button type="submit" id="uploadBtn" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <span id="uploadBtnText">Upload & Import</span>
+                    </button>
+                </div>
+            </form>
+                        
+                        <div id="importProgress" class="mt-4 hidden">
+                            <div class="bg-gray-800 rounded-full h-2 overflow-hidden">
+                                <div id="progressBar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <p id="progressText" class="text-gray-400 text-sm mt-2 text-center">Processing...</p>
+                        </div>
+                        
+                        <div id="importResult" class="mt-4 hidden"></div>
+                    </div>
                 @else
                     <!-- Preview Stats Grid (No Data Yet) -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 opacity-50 pointer-events-none">
@@ -586,7 +644,6 @@
                     dropdown.classList.add('show');
                 }
             } catch (error) {
-                console.error('Search error:', error);
                 currentResults = [];
                 dropdown.innerHTML = '<div class="p-4 text-red-400 text-center text-sm">Error searching</div>';
                 dropdown.classList.add('show');
@@ -642,6 +699,369 @@
                 if (query.length >= 2) {
                     window.location.href = `/search?q=${encodeURIComponent(query)}`;
                 }
+            }
+        });
+    </script>
+
+    <!-- Import History JavaScript -->
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('historyFiles');
+        const fileList = document.getElementById('fileList');
+        const actionButtons = document.getElementById('actionButtons');
+        const previewBtn = document.getElementById('previewBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const importForm = document.getElementById('importForm');
+        const importProgress = document.getElementById('importProgress');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const importResult = document.getElementById('importResult');
+        const importStatusBtn = document.getElementById('importStatusBtn');
+
+        // Click to browse
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-purple-500', 'bg-purple-500/5');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-purple-500', 'bg-purple-500/5');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-purple-500', 'bg-purple-500/5');
+            fileInput.files = e.dataTransfer.files;
+            displayFiles();
+        });
+
+        fileInput.addEventListener('change', displayFiles);
+
+        function displayFiles() {
+            const files = Array.from(fileInput.files);
+            if (files.length === 0) {
+                fileList.classList.add('hidden');
+                uploadBtn.classList.add('hidden');
+                return;
+            }
+
+            fileList.innerHTML = '<h4 class="text-white font-semibold mb-2">Selected Files:</h4>';
+            files.forEach(file => {
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                fileList.innerHTML += `
+                    <div class="flex items-center justify-between bg-gray-800 rounded-lg p-3 mb-2">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-purple-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span class="text-gray-300 text-sm">${file.name}</span>
+                        </div>
+                        <span class="text-gray-500 text-xs">${fileSize} MB</span>
+                    </div>
+                `;
+            });
+            fileList.classList.remove('hidden');
+            actionButtons.classList.remove('hidden');
+        }
+
+        // Preview Stats (doesn't save to database)
+        previewBtn.addEventListener('click', async () => {
+            const files = fileInput.files;
+            if (files.length === 0) return;
+
+            const formData = new FormData();
+            for (let file of files) {
+                formData.append('history_files[]', file);
+            }
+
+            // Show progress
+            importProgress.classList.remove('hidden');
+            progressText.textContent = 'Analyzing files...';
+            previewBtn.disabled = true;
+            uploadBtn.disabled = true;
+            previewBtn.querySelector('#previewBtnText').textContent = 'Analyzing...';
+            importResult.classList.add('hidden');
+
+            try {
+                progressBar.style.width = '50%';
+
+                const response = await fetch('{{ route("preview.history") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                    }
+                });
+
+                progressBar.style.width = '100%';
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                // Display preview stats
+                importResult.innerHTML = `
+                    <div class="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-6">
+                        <h4 class="text-blue-400 font-semibold mb-4 text-lg flex items-center">
+                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            Preview: Your Spotify History
+                        </h4>
+                        <div class="grid md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-gray-800/50 rounded-lg p-4">
+                                <p class="text-gray-400 text-sm mb-1">Total Tracks</p>
+                                <p class="text-white font-bold text-2xl">${result.total_tracks.toLocaleString()}</p>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-lg p-4">
+                                <p class="text-gray-400 text-sm mb-1">Listening Time</p>
+                                <p class="text-white font-bold text-2xl">${result.total_hours.toLocaleString()}h</p>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-lg p-4">
+                                <p class="text-gray-400 text-sm mb-1">Files Processed</p>
+                                <p class="text-white font-bold text-2xl">${result.files_processed}</p>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4 mb-4">
+                            <div class="bg-gray-800/50 rounded-lg p-4">
+                                <p class="text-gray-400 text-sm mb-1">Date Range</p>
+                                <p class="text-white font-semibold">${result.oldest_date || 'N/A'} → ${result.newest_date || 'N/A'}</p>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-lg p-4">
+                                <p class="text-gray-400 text-sm mb-1">Completion Rate</p>
+                                <p class="text-white font-semibold">${result.completed_tracks.toLocaleString()} completed / ${result.skipped_tracks.toLocaleString()} skipped</p>
+                            </div>
+                        </div>
+                        ${Object.keys(result.top_artists).length > 0 ? `
+                            <div class="mb-4">
+                                <h5 class="text-purple-400 font-semibold mb-2">Top Artists</h5>
+                                <div class="bg-gray-800/50 rounded-lg p-3">
+                                    <ol class="text-sm space-y-1">
+                                        ${Object.entries(result.top_artists).slice(0, 5).map(([artist, count]) => 
+                                            `<li class="text-gray-300"><span class="text-purple-400 font-semibold">${count}</span> plays - ${artist}</li>`
+                                        ).join('')}
+                                    </ol>
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${Object.keys(result.top_tracks).length > 0 ? `
+                            <div>
+                                <h5 class="text-pink-400 font-semibold mb-2">Top Tracks</h5>
+                                <div class="bg-gray-800/50 rounded-lg p-3">
+                                    <ol class="text-sm space-y-1">
+                                        ${Object.entries(result.top_tracks).slice(0, 5).map(([track, count]) => 
+                                            `<li class="text-gray-300"><span class="text-pink-400 font-semibold">${count}</span> plays - ${track}</li>`
+                                        ).join('')}
+                                    </ol>
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${result.errors && result.errors.length > 0 ? `
+                            <div class="mt-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                                <p class="text-yellow-400 text-sm font-semibold mb-1">Warnings:</p>
+                                <ul class="text-yellow-300 text-xs space-y-1">
+                                    ${result.errors.map(err => `<li>• ${err}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                        <div class="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                            <p class="text-blue-300 text-sm">
+                                <strong>Note:</strong> This is a preview only. Click "Upload & Import" to save this data to your account.
+                            </p>
+                        </div>
+                    </div>
+                `;
+                importResult.classList.remove('hidden');
+
+            } catch (error) {
+                importResult.innerHTML = `
+                    <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-red-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div>
+                                <h4 class="text-red-400 font-semibold mb-1">Preview Failed</h4>
+                                <p class="text-gray-300 text-sm">${error.message}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                importResult.classList.remove('hidden');
+            } finally {
+                previewBtn.disabled = false;
+                uploadBtn.disabled = false;
+                previewBtn.querySelector('#previewBtnText').textContent = 'Preview Stats';
+                setTimeout(() => {
+                    importProgress.classList.add('hidden');
+                    progressBar.style.width = '0%';
+                }, 2000);
+            }
+        });
+
+        // Upload & Import (saves to database)
+        importForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const files = fileInput.files;
+            if (files.length === 0) return;
+
+            const formData = new FormData();
+            for (let file of files) {
+                formData.append('history_files[]', file);
+            }
+
+            // Show progress
+            importProgress.classList.remove('hidden');
+            progressText.textContent = 'Uploading and importing...';
+            previewBtn.disabled = true;
+            uploadBtn.disabled = true;
+            uploadBtn.querySelector('#uploadBtnText').textContent = 'Uploading...';
+            importResult.classList.add('hidden');
+
+            try {
+                progressBar.style.width = '50%';
+                progressText.textContent = 'Uploading files...';
+
+                const response = await fetch('{{ route("import.history") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                    },
+                    body: formData
+                });
+
+                progressBar.style.width = '100%';
+                progressText.textContent = 'Processing complete!';
+
+                const result = await response.json();
+
+                if (result.success) {
+                    importResult.innerHTML = `
+                        <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <svg class="w-6 h-6 text-green-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div>
+                                    <h4 class="text-green-400 font-semibold mb-2">Import Successful!</h4>
+                                    <p class="text-gray-300 text-sm mb-2">
+                                        <strong>${result.imported.toLocaleString()}</strong> tracks imported<br>
+                                        <strong>${result.skipped.toLocaleString()}</strong> tracks skipped (duplicates)<br>
+                                        <strong>${result.total_minutes.toLocaleString()}</strong> total minutes in your history
+                                    </p>
+                                    ${result.errors.length > 0 ? `<p class="text-yellow-400 text-sm mt-2">Some files had errors: ${result.errors.join(', ')}</p>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    importResult.classList.remove('hidden');
+                    
+                    // Reload page after 2 seconds to show updated stats
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    throw new Error(result.error || 'Import failed');
+                }
+
+            } catch (error) {
+                importResult.innerHTML = `
+                    <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-red-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div>
+                                <h4 class="text-red-400 font-semibold mb-1">Import Failed</h4>
+                                <p class="text-gray-300 text-sm">${error.message}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                importResult.classList.remove('hidden');
+            } finally {
+                previewBtn.disabled = false;
+                uploadBtn.disabled = false;
+                uploadBtn.querySelector('#uploadBtnText').textContent = 'Upload & Import';
+                setTimeout(() => {
+                    importProgress.classList.add('hidden');
+                    progressBar.style.width = '0%';
+                }, 2000);
+            }
+        });
+
+        // View import stats
+        importStatusBtn.addEventListener('click', async () => {
+            importResult.classList.add('hidden');
+            
+            try {
+                const response = await fetch('{{ route("import.status") }}');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                if (data.total_entries > 0) {
+                    importResult.innerHTML = `
+                        <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                            <h4 class="text-blue-400 font-semibold mb-3">Your Imported History</h4>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p class="text-gray-400">Total Tracks</p>
+                                    <p class="text-white font-semibold text-lg">${data.total_entries.toLocaleString()}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400">Total Listening Time</p>
+                                    <p class="text-white font-semibold text-lg">${data.total_hours.toLocaleString()} hours</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400">Oldest Entry</p>
+                                    <p class="text-white font-semibold">${data.oldest_entry || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400">Newest Entry</p>
+                                    <p class="text-white font-semibold">${data.newest_entry || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    importResult.innerHTML = `
+                        <div class="bg-gray-800 rounded-lg p-4 text-center">
+                            <p class="text-gray-400">No imported history yet. Upload your files to get started!</p>
+                        </div>
+                    `;
+                }
+                importResult.classList.remove('hidden');
+            } catch (error) {
+                importResult.innerHTML = `
+                    <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-red-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div>
+                                <h4 class="text-red-400 font-semibold mb-1">Error</h4>
+                                <p class="text-gray-300 text-sm">${error.message}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                importResult.classList.remove('hidden');
             }
         });
     </script>

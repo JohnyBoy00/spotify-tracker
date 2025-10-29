@@ -89,7 +89,7 @@ Detailed information about any track including audio features, album art, and pr
    cd /path/to/spotify-tracker
    ```
 
-2. **Run the startup script:**
+2. **Run the setup script (first time only):**
    ```bash
    ./start.sh
    ```
@@ -100,10 +100,16 @@ Detailed information about any track including audio features, album art, and pr
    - Create SQLite database (if using SQLite)
    - Run migrations
    - Install npm dependencies
-   - Start Laravel and Vite dev servers
 
-3. **Open your browser:**
-   Navigate to `http://localhost:8000`
+3. **Start the development server:**
+   ```bash
+   ./serve.sh
+   ```
+
+   This starts the server with optimized settings for large file uploads (Spotify history imports).
+
+4. **Open your browser:**
+   Navigate to `http://localhost:8001`
 
 ## Manual Setup
 
@@ -365,6 +371,25 @@ spotify-tracker/
 ```
 
 ## Development
+
+### Starting the Server
+
+```bash
+# Recommended: Use the serve script (includes large file upload support)
+./serve.sh
+
+# Alternative: Standard Laravel server
+php artisan serve
+```
+
+The application will be available at:
+- `http://localhost:8001` (when using `./serve.sh`)
+- `http://localhost:8000` (when using `php artisan serve`)
+
+**Note:** The `serve.sh` script is recommended as it includes optimized PHP settings for:
+- Large file uploads (25MB) - needed for Spotify history imports
+- Extended execution time (300 seconds)
+- Increased memory limit (512MB)
 
 ### Useful Laravel Commands
 
