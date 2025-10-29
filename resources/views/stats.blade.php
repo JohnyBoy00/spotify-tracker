@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
     <style>
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -574,6 +573,10 @@
             if (tab === 'minutes') {
                 timeRangeFilter.style.display = 'none';
                 genresInfoIcon.style.display = 'none';
+                // Initialize chart when Minutes tab is shown
+                if (typeof initializeWeeklyChart === 'function') {
+                    initializeWeeklyChart();
+                }
             } else if (tab === 'genres') {
                 timeRangeFilter.style.display = 'flex';
                 genresInfoIcon.style.display = 'block';
@@ -1068,8 +1071,13 @@
 
     <!-- CanvasJS Chart Script -->
     @if(!empty($weeklyChartData))
+    <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
     <script>
-        window.addEventListener('load', function () {
+        var chartInitialized = false;
+
+        window.initializeWeeklyChart = function() {
+            if (chartInitialized) return;
+            
             var chart = new CanvasJS.Chart("weeklyChart", {
                 backgroundColor: "transparent",
                 animationEnabled: true,
@@ -1124,6 +1132,15 @@
                 }]
             });
             chart.render();
+            chartInitialized = true;
+        };
+
+        // If directly visiting the minutes tab, initialize immediately
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('tab') === 'minutes') {
+                window.initializeWeeklyChart();
+            }
         });
     </script>
     @endif
