@@ -246,9 +246,31 @@
             </div>
         </div>
 
+        @if(isset($youtubeVideoId))
+        <!-- YouTube Music Video -->
+        <div class="glass-card rounded-2xl p-8 shadow-2xl fade-in mb-8" style="animation-delay: 0.5s;">
+            <div class="flex items-center gap-3 mb-6">
+                <svg class="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                <h2 class="text-2xl font-bold">Music Video</h2>
+            </div>
+            
+            <div class="relative w-full" style="padding-bottom: 56.25%;">
+                <iframe 
+                    class="absolute top-0 left-0 w-full h-full rounded-xl"
+                    src="https://www.youtube.com/embed/{{ $youtubeVideoId }}?rel=0&modestbranding=1" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+        @endif
+
         @if(isset($audioFeatures))
         <!-- Audio Features -->
-        <div class="glass-card rounded-2xl p-8 shadow-2xl fade-in" style="animation-delay: 0.5s;">
+        <div class="glass-card rounded-2xl p-8 shadow-2xl fade-in" style="animation-delay: 0.6s;">
             <div class="flex items-center gap-3 mb-6">
                 <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>

@@ -33,6 +33,7 @@ A Laravel-based web application that tracks your Spotify listening history, anal
 - **Smart Search** - Search for any song with live autocomplete
 - **Track Details** - View comprehensive information including:
   - Album artwork with download functionality
+  - YouTube music videos (when available)
   - Audio features (energy, danceability, tempo, etc.)
   - 30-second previews
   - Release information
@@ -209,6 +210,27 @@ npm run dev
    - `user-read-private` - Access user profile data
    - `user-read-email` - Access email address
    - `user-follow-read` - Access following list
+
+### YouTube API Setup (Optional)
+
+To display music videos on track pages:
+
+1. **Create a Google Cloud Project:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable the **YouTube Data API v3**
+
+2. **Get an API Key:**
+   - Go to "Credentials" in the left sidebar
+   - Click "Create Credentials" → "API Key"
+   - Copy the generated API key
+
+3. **Add to `.env`:**
+   ```env
+   YOUTUBE_API_KEY=your_youtube_api_key_here
+   ```
+
+Note: The app works fine without this - music videos just won't be displayed.
 
 ## Listening Minutes Tracking
 

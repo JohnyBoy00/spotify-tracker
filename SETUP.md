@@ -119,7 +119,23 @@ SPOTIFY_CLIENT_SECRET=your_client_secret_here
 SPOTIFY_REDIRECT_URI=http://localhost:8000/callback
 ```
 
-### 4. Create a Config File for Spotify
+### 4. YouTube API Setup (Optional - for Music Videos)
+
+To display YouTube music videos on track pages:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the **YouTube Data API v3**
+4. Go to "Credentials" and create an **API Key**
+5. Add the API key to your `.env` file:
+
+```env
+YOUTUBE_API_KEY=your_youtube_api_key_here
+```
+
+Note: Without this key, the app will still work but won't display music videos.
+
+### 5. Create a Config File for Spotify
 
 Create `config/spotify.php`:
 ```php

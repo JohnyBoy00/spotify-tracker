@@ -361,11 +361,75 @@ class SpotifyController extends Controller
             // Get user profile
             $user = $api->me();
 
-            return view('track', compact('track', 'audioFeatures', 'user'));
+            // Search for YouTube music video
+            $youtubeVideoId = $this->searchYouTubeVideo($track);
+
+            return view('track', compact('track', 'audioFeatures', 'user', 'youtubeVideoId'));
 
         } catch (\Exception $error) {
             \Log::error('Track details error: ' . $error->getMessage());
             return redirect()->route('search')->with('error', 'Error fetching track details: ' . $error->getMessage());
+        }
+    }
+
+    /**
+     * Search for a YouTube music video based on track information.
+     *
+     * @param object $track
+     * @return string|null
+     */
+    private function searchYouTubeVideo($track)
+    {
+        $apiKey = env('YOUTUBE_API_KEY');
+        
+        if (!$apiKey) {
+            return null;
+        }
+
+        try {
+            // Build search query: "Artist - Track Name"
+            $artists = collect($track->artists)->pluck('name')->join(', ');
+            $query = urlencode("{$artists} {$track->name}");
+            
+            // Call YouTube Data API - search for music videos with more results to filter
+            $url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q={$query}&type=video&videoCategoryId=10&videoEmbeddable=true&maxResults=5&key={$apiKey}";
+            
+            $response = file_get_contents($url);
+            $data = json_decode($response, true);
+            
+            if (isset($data['items']) && count($data['items']) > 0) {
+                // Prioritize official music videos and avoid auto-generated content
+                foreach ($data['items'] as $item) {
+                    $title = strtolower($item['snippet']['title']);
+                    $channelTitle = strtolower($item['snippet']['channelTitle']);
+                    
+                    // Skip auto-generated "Topic" channels
+                    if (strpos($channelTitle, 'topic') !== false) {
+                        continue;
+                    }
+                    
+                    // Prefer videos with "official" or "music video" in title
+                    if (strpos($title, 'official') !== false || strpos($title, 'music video') !== false) {
+                        return $item['id']['videoId'];
+                    }
+                }
+                
+                // If no official video found, return the first non-Topic result
+                foreach ($data['items'] as $item) {
+                    $channelTitle = strtolower($item['snippet']['channelTitle']);
+                    if (strpos($channelTitle, 'topic') === false) {
+                        return $item['id']['videoId'];
+                    }
+                }
+                
+                // Last resort: return first result even if it's a Topic channel
+                return $data['items'][0]['id']['videoId'];
+            }
+            
+            return null;
+        } catch (\Exception $error) {
+            \Log::error('YouTube search error: ' . $error->getMessage());
+            return null;
         }
     }
 
