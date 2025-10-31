@@ -268,6 +268,82 @@
         </div>
         @endif
 
+        @if(isset($lyrics) && ($lyrics['text'] || $lyrics['url']))
+        <!-- Song Lyrics -->
+        <div class="glass-card rounded-2xl p-8 shadow-2xl fade-in mb-8" style="animation-delay: 0.6s;">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-lg">
+                        <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold">Lyrics</h2>
+                        <p class="text-xs text-gray-400 mt-0.5">Powered by Genius</p>
+                    </div>
+                </div>
+                @if(isset($lyrics['url']))
+                <a href="{{ $lyrics['url'] }}" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black text-sm font-semibold rounded-lg transition-all duration-300 hover:scale-105 shadow-lg">
+                    <span>View on Genius</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                </a>
+                @endif
+            </div>
+            
+            @if(isset($lyrics['text']))
+            <!-- Display lyrics text -->
+            <div class="relative">
+                <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 rounded-xl blur-xl"></div>
+                <div class="relative bg-gradient-to-br from-black/50 to-gray-900/50 rounded-xl p-8 max-h-[500px] overflow-y-auto border border-yellow-500/20 backdrop-blur-sm"
+                     style="scrollbar-width: thin; scrollbar-color: rgba(234, 179, 8, 0.5) rgba(0, 0, 0, 0.3);">
+                    <style>
+                        .lyrics-container::-webkit-scrollbar {
+                            width: 8px;
+                        }
+                        .lyrics-container::-webkit-scrollbar-track {
+                            background: rgba(0, 0, 0, 0.3);
+                            border-radius: 10px;
+                        }
+                        .lyrics-container::-webkit-scrollbar-thumb {
+                            background: rgba(234, 179, 8, 0.5);
+                            border-radius: 10px;
+                        }
+                        .lyrics-container::-webkit-scrollbar-thumb:hover {
+                            background: rgba(234, 179, 8, 0.7);
+                        }
+                        .lyrics-text {
+                            line-height: 1.8;
+                            letter-spacing: 0.02em;
+                        }
+                    </style>
+                    <pre class="lyrics-text text-gray-100 whitespace-pre-wrap font-sans text-base leading-relaxed">{{ $lyrics['text'] }}</pre>
+                </div>
+            </div>
+            @else
+            <!-- Fallback if lyrics couldn't be scraped -->
+            <div class="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-xl p-6 border border-yellow-500/20">
+                <div class="flex items-center gap-4">
+                    @if(isset($lyrics['thumbnail']))
+                    <img src="{{ $lyrics['thumbnail'] }}" alt="Song artwork" class="w-20 h-20 rounded-xl shadow-lg">
+                    @endif
+                    
+                    <div class="flex-1">
+                        <h3 class="text-xl font-semibold text-white mb-1">{{ $lyrics['title'] ?? 'Unknown' }}</h3>
+                        <p class="text-gray-400 text-sm mb-2">{{ $lyrics['artist'] ?? 'Unknown Artist' }}</p>
+                        <p class="text-yellow-400 text-sm font-medium">🎵 Full lyrics available on Genius.com</p>
+                    </div>
+                </div>
+            </div>
+            @endif
+        </div>
+        @endif
+
         @if(isset($audioFeatures))
         <!-- Audio Features -->
         <div class="glass-card rounded-2xl p-8 shadow-2xl fade-in" style="animation-delay: 0.6s;">

@@ -135,7 +135,35 @@ YOUTUBE_API_KEY=your_youtube_api_key_here
 
 Note: Without this key, the app will still work but won't display music videos.
 
-### 5. Create a Config File for Spotify
+### 5. Genius API Setup (Optional - for Song Lyrics)
+
+To display song lyrics links on track pages:
+
+1. Go to [Genius API Clients](https://genius.com/api-clients)
+2. Sign up for a free account (or login)
+3. Click **"New API Client"**
+4. Fill in the application details:
+   - **App Name**: Spotify Tracker (or any name)
+   - **App Website URL**: http://localhost:8001 (for development)
+   - **Redirect URI**: http://localhost:8001 (not used, but required)
+5. Click **"Save"**
+6. Click **"Generate Access Token"**
+7. Copy the **Client Access Token**
+8. Add the token to your `.env` file:
+
+```env
+GENIUS_API_KEY=your_genius_access_token_here
+```
+
+**Free Tier Benefits:**
+- ✅ **Completely FREE** (no credit card required)
+- ✅ **50,000 requests per day**
+- ✅ Links to full lyrics on Genius.com
+- ✅ Song metadata and artwork
+
+Note: Without this key, the app will still work but won't display lyrics links.
+
+### 6. Create a Config File for Spotify
 
 Create `config/spotify.php`:
 ```php

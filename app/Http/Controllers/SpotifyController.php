@@ -364,7 +364,10 @@ class SpotifyController extends Controller
             // Search for YouTube music video
             $youtubeVideoId = $this->searchYouTubeVideo($track);
 
-            return view('track', compact('track', 'audioFeatures', 'user', 'youtubeVideoId'));
+            // Fetch song lyrics
+            $lyrics = $this->fetchLyrics($track);
+
+            return view('track', compact('track', 'audioFeatures', 'user', 'youtubeVideoId', 'lyrics'));
 
         } catch (\Exception $error) {
             \Log::error('Track details error: ' . $error->getMessage());
@@ -431,6 +434,168 @@ class SpotifyController extends Controller
             \Log::error('YouTube search error: ' . $error->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Fetch song lyrics from Genius API.
+     *
+     * @param object $track
+     * @return array|null
+     */
+    private function fetchLyrics($track)
+    {
+        $apiKey = env('GENIUS_API_KEY');
+        
+        if (!$apiKey) {
+            return null;
+        }
+
+        try {
+            $artists = collect($track->artists)->pluck('name')->first(); // Get first artist
+            $trackName = $track->name;
+            
+            // Remove any text in parentheses or brackets for better search results
+            $cleanTrackName = preg_replace('/[\(\[].*?[\)\]]/', '', $trackName);
+            $cleanTrackName = trim($cleanTrackName);
+            
+            $searchQuery = urlencode("{$artists} {$cleanTrackName}");
+            $searchUrl = "https://api.genius.com/search?q={$searchQuery}";
+            
+            $context = stream_context_create([
+                'http' => [
+                    'header' => "Authorization: Bearer {$apiKey}\r\n"
+                ]
+            ]);
+            
+            $response = @file_get_contents($searchUrl, false, $context);
+            if ($response === false) {
+                return null;
+            }
+            
+            $data = json_decode($response, true);
+            
+            if (isset($data['response']['hits'][0])) {
+                $song = $data['response']['hits'][0]['result'];
+                $geniusUrl = $song['url'] ?? null;
+                
+                // Scrape lyrics from Genius page
+                $lyricsText = null;
+                if ($geniusUrl) {
+                    $lyricsText = $this->scrapeLyricsFromGenius($geniusUrl);
+                }
+                
+                return [
+                    'title' => $song['title'] ?? null,
+                    'artist' => $song['primary_artist']['name'] ?? null,
+                    'url' => $geniusUrl,
+                    'thumbnail' => $song['song_art_image_thumbnail_url'] ?? null,
+                    'genius_id' => $song['id'] ?? null,
+                    'text' => $lyricsText,
+                ];
+            }
+            
+            return null;
+        } catch (\Exception $error) {
+            \Log::error('Lyrics fetch error: ' . $error->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Scrape lyrics from Genius page.
+     *
+     * @param string $url
+     * @return string|null
+     */
+    private function scrapeLyricsFromGenius($url)
+    {
+        try {
+            $html = @file_get_contents($url);
+            if ($html === false) {
+                return null;
+            }
+
+            // Use DOMDocument to parse HTML
+            $dom = new \DOMDocument();
+            @$dom->loadHTML($html);
+            $xpath = new \DOMXPath($dom);
+
+            // Genius uses data-lyrics-container attribute for lyrics divs
+            $lyricsNodes = $xpath->query("//*[@data-lyrics-container='true']");
+            
+            if ($lyricsNodes->length === 0) {
+                return null;
+            }
+
+            $lyrics = '';
+            foreach ($lyricsNodes as $node) {
+                $nodeText = $this->getNodeText($node);
+                
+                // Remove Genius metadata/intro text that appears at the start
+                // These usually contain numbers (contributors, translations) and words like "Lyrics", "Contributors"
+                $lines = explode("\n", $nodeText);
+                $cleanLines = [];
+                $skipIntro = true;
+                
+                foreach ($lines as $line) {
+                    $trimmedLine = trim($line);
+                    
+                    // Skip lines that look like metadata
+                    if ($skipIntro) {
+                        // Check if line contains metadata patterns
+                        if (preg_match('/^\d+\s*(Contributors?|Translations?|Lyrics|Türkçe|Português|Español|Français)/i', $trimmedLine)) {
+                            continue;
+                        }
+                        // Check if line is mostly numbers and special characters
+                        if (preg_match('/^[\d\s\.,]+$/', $trimmedLine) && strlen($trimmedLine) < 50) {
+                            continue;
+                        }
+                        // Check for "Read More" or similar links
+                        if (preg_match('/Read More|See more|Learn more/i', $trimmedLine)) {
+                            continue;
+                        }
+                        // If we find a line that looks like actual lyrics, stop skipping
+                        if (!empty($trimmedLine) && strlen($trimmedLine) > 5) {
+                            $skipIntro = false;
+                        }
+                    }
+                    
+                    if (!$skipIntro || !empty($trimmedLine)) {
+                        $cleanLines[] = $line;
+                    }
+                }
+                
+                $lyrics .= implode("\n", $cleanLines) . "\n\n";
+            }
+
+            return trim($lyrics);
+        } catch (\Exception $error) {
+            \Log::error('Lyrics scraping error: ' . $error->getMessage());
+            
+            return null;
+        }
+    }
+
+    /**
+     * Extract text from DOM node, preserving line breaks.
+     *
+     * @param \DOMNode $node
+     * @return string
+     */
+    private function getNodeText($node)
+    {
+        $text = '';
+        foreach ($node->childNodes as $child) {
+            if ($child->nodeType === XML_TEXT_NODE) {
+                $text .= $child->nodeValue;
+            } elseif ($child->nodeName === 'br') {
+                $text .= "\n";
+            } elseif ($child->hasChildNodes()) {
+                $text .= $this->getNodeText($child);
+            }
+        }
+
+        return $text;
     }
 
     /**

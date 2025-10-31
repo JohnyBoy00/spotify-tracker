@@ -34,6 +34,7 @@ A Laravel-based web application that tracks your Spotify listening history, anal
 - **Track Details** - View comprehensive information including:
   - Album artwork with download functionality
   - YouTube music videos (when available)
+  - Song lyrics links via Genius (when available)
   - Audio features (energy, danceability, tempo, etc.)
   - 30-second previews
   - Release information
