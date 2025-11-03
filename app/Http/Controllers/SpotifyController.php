@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DailyListeningSummary;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use SpotifyWebAPI\Session;
 use SpotifyWebAPI\SpotifyWebAPI;
@@ -153,6 +154,10 @@ class SpotifyController extends Controller
             $timeRange = 'medium_term';
         }
 
+        // Get month/year for monthly chart navigation
+        $selectedMonth = $request->query('month', now()->format('Y-m'));
+        $monthDate = Carbon::parse($selectedMonth . '-01');
+
         try {
             // Get user's top tracks with selected time range
             $topTracks = $api->getMyTop('tracks', [
@@ -172,6 +177,7 @@ class SpotifyController extends Controller
             // Get listening minutes stats from database
             $listeningMinutes = null;
             $weeklyChartData = [];
+            $monthlyChartData = [];
             if ($userId) {
                 $dbUser = \App\Models\User::find($userId);
                 if ($dbUser) {
@@ -216,6 +222,47 @@ class SpotifyController extends Controller
                             'date' => $date->format('M j'), // Jan 1, etc.
                         ];
                     }
+
+                    // Get weekly data for the selected month
+                    $startOfMonth = $monthDate->copy()->startOfMonth();
+                    $endOfMonth = $monthDate->copy()->endOfMonth();
+                    
+                    $monthlyData = DailyListeningSummary::where('user_id', $userId)
+                        ->whereBetween('date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
+                        ->orderBy('date', 'asc')
+                        ->get();
+
+                    // Group by week
+                    $weeksInMonth = [];
+                    $currentWeek = $startOfMonth->copy()->startOfWeek();
+                    $weekNumber = 1;
+                    
+                    while ($currentWeek->lte($endOfMonth)) {
+                        $weekStart = $currentWeek->copy();
+                        $weekEnd = $currentWeek->copy()->endOfWeek();
+                        
+                        // Clamp to month boundaries
+                        if ($weekStart->lt($startOfMonth)) $weekStart = $startOfMonth->copy();
+                        if ($weekEnd->gt($endOfMonth)) $weekEnd = $endOfMonth->copy();
+                        
+                        // Calculate total minutes for this week
+                        $weekMinutes = $monthlyData->filter(function($item) use ($weekStart, $weekEnd) {
+                            $itemDate = Carbon::parse($item->date);
+                            return $itemDate->gte($weekStart) && $itemDate->lte($weekEnd);
+                        })->sum('total_minutes');
+                        
+                        $monthlyChartData[] = [
+                            'label' => 'Week ' . $weekNumber,
+                            'y' => (int)$weekMinutes,
+                            'dateRange' => $weekStart->format('M j') . ' - ' . $weekEnd->format('M j'),
+                        ];
+                        
+                        $currentWeek->addWeek();
+                        $weekNumber++;
+                        
+                        // Safety break to avoid infinite loops
+                        if ($weekNumber > 6) break;
+                    }
                 }
             }
 
@@ -238,7 +285,15 @@ class SpotifyController extends Controller
             });
             $topGenres = array_slice($genreData, 0, 20, true);
 
-            return view('stats', compact('topTracks', 'topArtists', 'topGenres', 'user', 'listeningMinutes', 'weeklyChartData'));
+            // If AJAX request, return only the monthly chart data
+            if ($request->ajax() || $request->query('ajax')) {
+                return response()->json([
+                    'monthlyChartData' => $monthlyChartData,
+                    'selectedMonth' => $selectedMonth,
+                ]);
+            }
+
+            return view('stats', compact('topTracks', 'topArtists', 'topGenres', 'user', 'listeningMinutes', 'weeklyChartData', 'monthlyChartData', 'selectedMonth'));
 
         } catch (\Exception $error) {
             return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $error->getMessage());

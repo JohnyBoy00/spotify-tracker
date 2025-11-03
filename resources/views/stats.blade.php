@@ -438,6 +438,83 @@
                     </div>
                     @endif
 
+                    @if(isset($monthlyChartData) && count($monthlyChartData) > 0)
+                    <!-- Monthly Listening Activity -->
+                    <div class="mt-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-semibold text-white flex items-center">
+                                <svg class="w-6 h-6 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                Monthly Listening Activity
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <button onclick="navigateMonth(-1)" class="p-2 glass-card rounded-lg hover:bg-white/10 transition-all">
+                                    <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                </button>
+                                <div class="relative">
+                                    <button onclick="toggleMonthPicker()" class="glass-card rounded-lg px-4 py-2 min-w-[140px] text-center hover:bg-white/10 transition-all cursor-pointer">
+                                        <span class="text-white font-semibold" id="currentMonthLabel">{{ \Carbon\Carbon::parse($selectedMonth)->format('F Y') }}</span>
+                                    </button>
+                                    <!-- Month Picker Dropdown -->
+                                    <div id="monthPicker" class="hidden absolute top-full mt-2 left-1/2 transform -translate-x-1/2 glass-card rounded-xl p-4 shadow-2xl z-50 w-64">
+                                        <div class="mb-3">
+                                            <label class="text-xs text-gray-400 uppercase tracking-wider mb-1 block">Select Month & Year</label>
+                                            <div class="flex gap-2">
+                                                <select id="monthSelect" class="flex-1 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                                    <option value="0">January</option>
+                                                    <option value="1">February</option>
+                                                    <option value="2">March</option>
+                                                    <option value="3">April</option>
+                                                    <option value="4">May</option>
+                                                    <option value="5">June</option>
+                                                    <option value="6">July</option>
+                                                    <option value="7">August</option>
+                                                    <option value="8">September</option>
+                                                    <option value="9">October</option>
+                                                    <option value="10">November</option>
+                                                    <option value="11">December</option>
+                                                </select>
+                                                <select id="yearSelect" class="bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                                    <!-- Years will be populated by JavaScript -->
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button onclick="applyMonthSelection()" class="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">
+                                                Apply
+                                            </button>
+                                            <button onclick="toggleMonthPicker()" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onclick="navigateMonth(1)" class="p-2 glass-card rounded-lg hover:bg-white/10 transition-all">
+                                    <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="glass-card rounded-xl p-6 relative">
+                            <div id="monthlyChart" style="height: 350px; width: 100%;"></div>
+                            <!-- Loading Spinner Overlay -->
+                            <div id="monthlyChartLoader" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;">
+                                <div class="flex flex-col items-center gap-3">
+                                    <svg class="animate-spin h-12 w-12 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span class="text-purple-400 text-sm font-medium">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     <!-- Import History Section -->
                     <div class="glass-card rounded-xl p-6 mt-8">
                         <div class="flex items-center justify-between mb-4">
@@ -581,9 +658,12 @@
             if (tab === 'minutes') {
                 timeRangeFilter.style.display = 'none';
                 genresInfoIcon.style.display = 'none';
-                // Initialize chart when Minutes tab is shown
+                // Initialize charts when Minutes tab is shown
                 if (typeof initializeWeeklyChart === 'function') {
                     initializeWeeklyChart();
+                }
+                if (typeof initializeMonthlyChart === 'function') {
+                    initializeMonthlyChart();
                 }
             } else if (tab === 'genres') {
                 timeRangeFilter.style.display = 'flex';
@@ -1148,6 +1228,269 @@
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('tab') === 'minutes') {
                 window.initializeWeeklyChart();
+                if (typeof initializeMonthlyChart === 'function') {
+                    window.initializeMonthlyChart();
+                }
+            }
+        });
+    </script>
+    @endif
+
+    @if(isset($monthlyChartData) && count($monthlyChartData) > 0)
+    <script>
+        var monthlyChartInitialized = false;
+        var currentMonth = '{{ $selectedMonth }}';
+        var monthlyChart = null;
+
+        // Initialize month picker
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMonthPicker();
+        });
+
+        function initializeMonthPicker() {
+            const yearSelect = document.getElementById('yearSelect');
+            const currentYear = new Date().getFullYear();
+            
+            for (let year = currentYear - 5; year <= currentYear + 1; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+            
+            updateMonthPickerValues();
+        }
+
+        function updateMonthPickerValues() {
+            const [year, month] = currentMonth.split('-');
+            document.getElementById('monthSelect').value = parseInt(month) - 1;
+            document.getElementById('yearSelect').value = year;
+        }
+
+        function toggleMonthPicker() {
+            const picker = document.getElementById('monthPicker');
+            if (picker.classList.contains('hidden')) {
+                updateMonthPickerValues();
+                picker.classList.remove('hidden');
+            } else {
+                picker.classList.add('hidden');
+            }
+        }
+
+        async function applyMonthSelection() {
+            const monthSelect = document.getElementById('monthSelect');
+            const yearSelect = document.getElementById('yearSelect');
+            const month = parseInt(monthSelect.value) + 1;
+            const year = yearSelect.value;
+            const newMonth = year + '-' + String(month).padStart(2, '0');
+            
+            document.getElementById('monthPicker').classList.add('hidden');
+            
+            if (newMonth === currentMonth) return;
+            
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            const monthLabel = document.getElementById('currentMonthLabel');
+            monthLabel.textContent = monthNames[month - 1] + ' ' + year;
+            
+            // Show loading state
+            const chartContainer = document.getElementById('monthlyChart');
+            const loader = document.getElementById('monthlyChartLoader');
+            const originalOpacity = chartContainer.style.opacity;
+            chartContainer.style.opacity = '0.5';
+            chartContainer.style.pointerEvents = 'none';
+            loader.style.display = 'block';
+            
+            try {
+                // Fetch new data via AJAX
+                const url = new URL(window.location.href);
+                url.searchParams.set('month', newMonth);
+                url.searchParams.set('ajax', '1');
+                
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const data = await response.json();
+                
+                currentMonth = newMonth;
+                
+                // Update chart data
+                if (monthlyChart && data.monthlyChartData) {
+                    monthlyChart.options.data[0].dataPoints = data.monthlyChartData;
+                    monthlyChart.render();
+                }
+                
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('month', newMonth);
+                window.history.pushState({}, '', newUrl);
+                
+            } catch (error) {
+                console.error('Error loading month data:', error);
+                // Fallback to page reload if AJAX fails
+                const url = new URL(window.location.href);
+                url.searchParams.set('month', newMonth);
+                url.searchParams.set('tab', 'minutes');
+                window.location.href = url.toString();
+            } finally {
+                // Restore chart state
+                chartContainer.style.opacity = originalOpacity || '1';
+                chartContainer.style.pointerEvents = 'auto';
+                loader.style.display = 'none';
+            }
+        }
+
+        // Close picker when clicking outside
+        document.addEventListener('click', function(event) {
+            const picker = document.getElementById('monthPicker');
+            const pickerButton = event.target.closest('[onclick="toggleMonthPicker()"]');
+            const pickerContent = event.target.closest('#monthPicker');
+            
+            if (!pickerButton && !pickerContent && !picker.classList.contains('hidden')) {
+                picker.classList.add('hidden');
+            }
+        });
+
+        window.initializeMonthlyChart = function() {
+            if (monthlyChartInitialized) return;
+            
+            monthlyChart = new CanvasJS.Chart("monthlyChart", {
+                backgroundColor: "transparent",
+                animationEnabled: true,
+                theme: "dark2",
+                title: {
+                    text: "",
+                },
+                axisY: {
+                    title: "Minutes Listened",
+                    titleFontColor: "#9CA3AF",
+                    titleFontSize: 14,
+                    titleFontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                    labelFontColor: "#9CA3AF",
+                    labelFontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                    gridColor: "#374151",
+                    gridThickness: 1,
+                    minimum: 0,
+                    includeZero: true,
+                },
+                axisX: {
+                    labelFontColor: "#9CA3AF",
+                    labelFontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                    labelFontSize: 13,
+                    lineColor: "#374151",
+                    tickColor: "#374151",
+                    interval: 1,
+                },
+                toolTip: {
+                    backgroundColor: "#1F2937",
+                    borderColor: "#A855F7",
+                    borderThickness: 2,
+                    fontColor: "#F3F4F6",
+                    fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                    fontSize: 14,
+                    cornerRadius: 8,
+                    contentFormatter: function (e) {
+                        var entry = e.entries[0];
+                        var hours = (entry.dataPoint.y / 60).toFixed(1);
+                        return "<div style='padding: 4px;'>" +
+                               "<strong style='color: #A855F7;'>" + entry.dataPoint.dateRange + "</strong><br/>" +
+                               "<span style='color: #F3F4F6;'>" + entry.dataPoint.y + " minutes</span><br/>" +
+                               "<span style='color: #9CA3AF;'>(" + hours + " hours)</span>" +
+                               "</div>";
+                    }
+                },
+                data: [{
+                    type: "column",
+                    color: "#A855F7",
+                    indexLabelFontColor: "#9CA3AF",
+                    indexLabelFontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                    dataPoints: @json($monthlyChartData)
+                }]
+            });
+            monthlyChart.render();
+            monthlyChartInitialized = true;
+        };
+
+        async function navigateMonth(direction) {
+            const date = new Date(currentMonth + '-01');
+            date.setMonth(date.getMonth() + direction);
+            const newMonth = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+            
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            const monthLabel = document.getElementById('currentMonthLabel');
+            monthLabel.textContent = monthNames[date.getMonth()] + ' ' + date.getFullYear();
+            
+            // Show loading state on chart
+            const chartContainer = document.getElementById('monthlyChart');
+            const loader = document.getElementById('monthlyChartLoader');
+            const originalOpacity = chartContainer.style.opacity;
+            chartContainer.style.opacity = '0.5';
+            chartContainer.style.pointerEvents = 'none';
+            loader.style.display = 'block';
+            
+            // Disable navigation buttons during load
+            const prevBtn = event.currentTarget.parentElement.querySelector('button:first-child');
+            const nextBtn = event.currentTarget.parentElement.querySelector('button:last-child');
+            if (prevBtn) prevBtn.disabled = true;
+            if (nextBtn) nextBtn.disabled = true;
+            
+            try {
+                // Fetch new data via AJAX
+                const url = new URL(window.location.href);
+                url.searchParams.set('month', newMonth);
+                url.searchParams.set('ajax', '1');
+                
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const data = await response.json();
+                
+                currentMonth = newMonth;
+                
+                // Update chart data
+                if (monthlyChart && data.monthlyChartData) {
+                    monthlyChart.options.data[0].dataPoints = data.monthlyChartData;
+                    monthlyChart.render();
+                }
+                
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('month', newMonth);
+                window.history.pushState({}, '', newUrl);
+                
+            } catch (error) {
+                console.error('Error loading month data:', error);
+                // Fallback to page reload if AJAX fails
+                const url = new URL(window.location.href);
+                url.searchParams.set('month', newMonth);
+                url.searchParams.set('tab', 'minutes');
+                window.location.href = url.toString();
+            } finally {
+                // Restore chart state
+                chartContainer.style.opacity = originalOpacity || '1';
+                chartContainer.style.pointerEvents = 'auto';
+                loader.style.display = 'none';
+                
+                // Re-enable navigation buttons
+                if (prevBtn) prevBtn.disabled = false;
+                if (nextBtn) nextBtn.disabled = false;
+            }
+        }
+
+        // Initialize monthly chart when minutes tab is activated
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('tab') === 'minutes') {
+                window.initializeMonthlyChart();
             }
         });
     </script>
