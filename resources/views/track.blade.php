@@ -213,36 +213,68 @@
 
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="stat-card rounded-xl p-6 text-center fade-in" style="animation-delay: 0.1s;">
-                <svg class="w-8 h-8 mx-auto mb-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <p class="text-2xl font-bold text-white">{{ gmdate('i:s', $track->duration_ms / 1000) }}</p>
-                <p class="text-sm text-gray-400">Duration</p>
+            <!-- Duration Card -->
+            <div class="group stat-card rounded-xl p-6 text-center fade-in relative overflow-hidden" style="animation-delay: 0.1s;">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative">
+                    <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 mb-3 group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-1">
+                        {{ gmdate('i:s', $track->duration_ms / 1000) }}
+                    </p>
+                    <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Duration</p>
+                </div>
             </div>
 
-            <div class="stat-card rounded-xl p-6 text-center fade-in" style="animation-delay: 0.2s;">
-                <svg class="w-8 h-8 mx-auto mb-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
-                </svg>
-                <p class="text-2xl font-bold text-white">{{ $track->popularity }}</p>
-                <p class="text-sm text-gray-400">Popularity</p>
+            <!-- Popularity Card -->
+            <div class="group stat-card rounded-xl p-6 text-center fade-in relative overflow-hidden" style="animation-delay: 0.2s;">
+                <div class="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative">
+                    <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 mb-3 group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-7 h-7 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <p class="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-1">
+                        {{ $track->popularity }}<span class="text-xl">/100</span>
+                    </p>
+                    <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Popularity</p>
+                </div>
             </div>
 
-            <div class="stat-card rounded-xl p-6 text-center fade-in" style="animation-delay: 0.3s;">
-                <svg class="w-8 h-8 mx-auto mb-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path>
-                </svg>
-                <p class="text-2xl font-bold text-white">{{ $track->track_number }}</p>
-                <p class="text-sm text-gray-400">Track #</p>
+            <!-- Track Number Card -->
+            <div class="group stat-card rounded-xl p-6 text-center fade-in relative overflow-hidden" style="animation-delay: 0.3s;">
+                <div class="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative">
+                    <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 mb-3 group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-7 h-7 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-1">
+                        #{{ $track->track_number }}
+                    </p>
+                    <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Track Number</p>
+                </div>
             </div>
 
-            <div class="stat-card rounded-xl p-6 text-center fade-in" style="animation-delay: 0.4s;">
-                <svg class="w-8 h-8 mx-auto mb-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-                <p class="text-2xl font-bold text-white">{{ date('Y', strtotime($track->album->release_date)) }}</p>
-                <p class="text-sm text-gray-400">Release Year</p>
+            <!-- Release Year Card -->
+            <div class="group stat-card rounded-xl p-6 text-center fade-in relative overflow-hidden" style="animation-delay: 0.4s;">
+                <div class="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative">
+                    <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-orange-500/20 to-red-500/20 mb-3 group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent mb-1">
+                        {{ date('Y', strtotime($track->album->release_date)) }}
+                    </p>
+                    <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Release Year</p>
+                </div>
             </div>
         </div>
 
