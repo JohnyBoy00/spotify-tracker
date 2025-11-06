@@ -109,40 +109,52 @@
                         <svg class="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
-                        <div>
-                            <h3 class="font-semibold text-white mb-2">What Data We Access</h3>
-                            <ul class="text-sm text-gray-400 space-y-2">
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-white mb-3">What Data We Access & Collect</h3>
+                            <ul class="text-sm text-gray-400 space-y-2.5">
                                 <li class="flex items-start gap-2">
                                     <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                                     </svg>
-                                    <span>Your top tracks and artists</span>
+                                    <span><strong class="text-gray-300">Your top tracks and artists</strong> - Retrieved from Spotify API, displayed in real-time</span>
                                 </li>
                                 <li class="flex items-start gap-2">
                                     <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                                     </svg>
-                                    <span>Recently played tracks</span>
-                        </li>
+                                    <span><strong class="text-gray-300">Recently played tracks</strong> - Stored in our database to track listening minutes and patterns over time</span>
+                                </li>
                                 <li class="flex items-start gap-2">
                                     <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                                     </svg>
-                                    <span>Saved library (tracks and albums)</span>
-                        </li>
+                                    <span><strong class="text-gray-300">Track audio features</strong> - Metadata like energy, tempo, danceability for detailed track insights</span>
+                                </li>
                                 <li class="flex items-start gap-2">
                                     <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                                     </svg>
-                                    <span>Basic profile information (name, email, country)</span>
-                        </li>
-                    </ul>
+                                    <span><strong class="text-gray-300">Profile information</strong> - Display name, email, profile picture, and Spotify user ID (stored in our database)</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span><strong class="text-gray-300">Optional: Extended streaming history</strong> - Only if you manually upload files from Spotify</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
-                    <div class="bg-green-500 bg-opacity-10 border border-green-500 border-opacity-30 rounded-lg p-4">
+                    <div class="bg-green-500 bg-opacity-10 border border-green-500 border-opacity-30 rounded-lg p-4 mb-4">
                         <p class="text-sm text-gray-300">
                             <span class="font-semibold text-green-400">🔒 Privacy Guarantee:</span> 
-                            We only display your data to you. We do not store, sell, or share your information with third parties. This is a personal project for viewing your own Spotify statistics.
+                            Your data is stored securely in our database and is only visible to you. We do not sell, share, or analyze your data for any third-party purposes. This is a personal statistics tool.
+                        </p>
+                    </div>
+                    <div class="bg-blue-500 bg-opacity-10 border border-blue-500 border-opacity-30 rounded-lg p-4">
+                        <p class="text-sm text-gray-300">
+                            <span class="font-semibold text-blue-400">ℹ️ Data Storage:</span> 
+                            We store listening history in our database to calculate daily, weekly, monthly, and lifetime statistics. You can request deletion of your data at any time by revoking access in your Spotify settings.
                         </p>
                     </div>
                 </div>
@@ -161,12 +173,17 @@
                 </div>
 
                 <!-- Footer -->
-                <p class="text-center text-xs text-gray-500">
-                    By connecting, you agree to share the data listed above. 
-                    You can revoke access anytime from your 
-                    <a href="https://www.spotify.com/account/apps/" target="_blank" class="text-green-400 hover:text-green-300 underline transition-colors">
+                <p class="text-center text-sm text-gray-400 leading-relaxed">
+                    By connecting, you agree to grant us access to the data listed above. 
+                    Your data will be stored in our database to provide statistics and tracking features.<br>
+                    You can revoke access and request data deletion anytime from your 
+                    <a href="https://www.spotify.com/account/apps/" target="_blank" class="text-green-400 hover:text-green-300 underline transition-colors font-medium">
                         Spotify account settings
                     </a>.
+                    <br>
+                    <span class="text-gray-500 text-xs mt-2 block">
+                        We respect your privacy and comply with data protection regulations. Your data is yours.
+                    </span>
                 </p>
             </div>
 

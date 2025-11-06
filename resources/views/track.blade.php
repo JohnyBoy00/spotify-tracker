@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -128,19 +129,80 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-3">
-                        @if(isset($user->images[0]))
-                            <img src="{{ $user->images[0]->url }}" alt="Profile" class="w-10 h-10 rounded-full ring-2 ring-green-500">
-                        @else
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
-                                <span class="text-white font-bold">{{ substr($user->display_name, 0, 1) }}</span>
+                    <!-- User Menu Dropdown -->
+                    <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                        <button @click="open = !open" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-all duration-200 group">
+                            @if(isset($user->images[0]))
+                                <img src="{{ $user->images[0]->url }}" alt="Profile" class="w-10 h-10 rounded-full ring-2 ring-green-500 group-hover:ring-green-400 transition-all">
+                            @else
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center ring-2 ring-green-500 group-hover:ring-green-400 transition-all">
+                                    <span class="text-white font-bold text-sm">{{ substr($user->display_name, 0, 1) }}</span>
+                                </div>
+                            @endif
+                            <div class="hidden sm:block text-left">
+                                <p class="text-white font-semibold text-sm">{{ $user->display_name }}</p>
+                                <p class="text-gray-400 text-xs">{{ $user->email ?? 'Spotify User' }}</p>
                             </div>
-                        @endif
-                        <span class="text-gray-300 font-medium hidden sm:block">{{ $user->display_name }}</span>
+                            <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 hidden sm:block" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div x-show="open" 
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+                             class="absolute right-0 mt-3 w-64 rounded-2xl shadow-2xl border border-gray-700 overflow-hidden z-50"
+                             style="display: none; background: rgba(17, 17, 17, 0.95); backdrop-filter: blur(20px);">
+                            <div class="py-2">
+                                <!-- User Info Header -->
+                                <div class="px-4 py-4 border-b border-gray-700 bg-gradient-to-br from-green-500/10 to-emerald-500/10">
+                                    <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Signed in as</p>
+                                    <p class="text-sm font-semibold text-white truncate">{{ $user->display_name }}</p>
+                                    @if($user->email)
+                                        <p class="text-xs text-gray-500 truncate mt-0.5">{{ $user->email }}</p>
+                                    @endif
+                                </div>
+                                
+                                <!-- Menu Items -->
+                                <div class="py-1">
+                                    <a href="{{ $user->external_urls->spotify ?? '#' }}" 
+                                       target="_blank" 
+                                       rel="noopener noreferrer"
+                                       class="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-green-500/10 hover:text-green-400 transition-all group">
+                                        <div class="p-1.5 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                                            <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                                            </svg>
+                                        </div>
+                                        <span class="font-medium">View Spotify Profile</span>
+                                        <svg class="w-3.5 h-3.5 ml-auto opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                        </svg>
+                                    </a>
+                                </div>
+                                
+                                <div class="border-t border-gray-700/50 my-1"></div>
+                                
+                                <!-- Logout -->
+                                <div class="py-1">
+                                    <a href="{{ route('spotify.logout') }}" 
+                                       class="flex items-center gap-3 px-4 py-3 text-sm text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-all group">
+                                        <div class="p-1.5 rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
+                                            <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                            </svg>
+                                        </div>
+                                        <span class="font-medium">Logout</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <a href="{{ route('spotify.logout') }}" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium">
-                        Logout
-                    </a>
                 </div>
             </div>
         </div>

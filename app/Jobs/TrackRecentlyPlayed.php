@@ -61,20 +61,52 @@ class TrackRecentlyPlayed implements ShouldQueue
             $recentTracks = $api->getMyRecentTracks($options);
 
             $newTracksCount = 0;
+            $tracks = collect($recentTracks->items)->sortBy(function($item) {
+                return strtotime($item->played_at);
+            })->values();
 
-            foreach ($recentTracks->items as $item) {
+            foreach ($tracks as $index => $item) {
                 try {
+                    $playedAt = strtotime($item->played_at);
+                    $durationMs = $item->track->duration_ms;
+                    $trackId = $item->track->id;
+                    $listenedMs = $durationMs; // Default to full duration
+                    $completed = true;
+
+                    // Check if there's a next track to compare timing
+                    if (isset($tracks[$index + 1])) {
+                        $nextTrack = $tracks[$index + 1];
+                        $nextTrackId = $nextTrack->track->id;
+                        $nextPlayedAt = strtotime($nextTrack->played_at);
+                        $timeBetweenMs = ($nextPlayedAt - $playedAt) * 1000;
+
+                        // Only consider it a skip if:
+                        // 1. The time between tracks is less than the song duration
+                        // 2. AND it's a DIFFERENT track (different track_id)
+                        // If same track_id, user likely paused and resumed
+                        if ($timeBetweenMs < $durationMs && $trackId !== $nextTrackId) {
+                            $listenedMs = $timeBetweenMs;
+                            $completed = false;
+                            
+                            // Ensure we don't have negative or zero values
+                            if ($listenedMs < 0) {
+                                $listenedMs = 0;
+                            }
+                        }
+                        // If same track_id, it's a pause/resume - count full duration
+                    }
+
                     // Try to create the record - will fail silently if duplicate
                     ListeningHistory::create([
                         'user_id' => $this->user->id,
-                        'track_id' => $item->track->id,
+                        'track_id' => $trackId,
                         'track_name' => $item->track->name,
                         'artist_name' => $item->track->artists[0]->name ?? 'Unknown',
                         'album_name' => $item->track->album->name ?? null,
-                        'duration_ms' => $item->track->duration_ms,
+                        'duration_ms' => $durationMs,
                         'played_at' => $item->played_at,
-                        'listened_ms' => $item->track->duration_ms, // Assume full listen for now
-                        'completed' => true,
+                        'listened_ms' => $listenedMs,
+                        'completed' => $completed,
                     ]);
 
                     $newTracksCount++;
