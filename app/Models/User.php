@@ -29,6 +29,8 @@ class User extends Authenticatable
         'token_expires_at',
         'total_listening_minutes',
         'last_tracked_at',
+        'accepted_terms_version',
+        'terms_accepted_at',
     ];
 
     /**
@@ -55,8 +57,19 @@ class User extends Authenticatable
             'password' => 'hashed',
             'token_expires_at' => 'datetime',
             'last_tracked_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'total_listening_minutes' => 'integer',
         ];
+    }
+
+    /**
+     * Check if user has accepted the current version of terms.
+     *
+     * @return bool
+     */
+    public function hasAcceptedCurrentTerms(): bool
+    {
+        return $this->accepted_terms_version === config('terms.version');
     }
 
     /**

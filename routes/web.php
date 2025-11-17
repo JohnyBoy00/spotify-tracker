@@ -12,6 +12,9 @@ Route::get('/', function () {
 Route::get('/auth/spotify', [SpotifyController::class, 'redirectToSpotify'])->name('spotify.auth');
 Route::get('/callback', [SpotifyController::class, 'handleSpotifyCallback'])->name('spotify.callback');
 
+// Terms acceptance
+Route::post('/accept-terms', [SpotifyController::class, 'acceptTerms'])->name('accept.terms');
+
 // Dashboard (requires authentication)
 Route::get('/dashboard', [SpotifyController::class, 'dashboard'])->name('dashboard');
 

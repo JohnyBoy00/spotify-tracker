@@ -60,33 +60,70 @@ class SpotifyController extends Controller
             $accessToken = $session->getAccessToken();
             $refreshToken = $session->getRefreshToken();
 
-            // Get user profile from Spotify
             $api = new SpotifyWebAPI();
             $api->setAccessToken($accessToken);
             $spotifyUser = $api->me();
 
-            // Create or update user in database
-            $user = User::updateOrCreate(
-                ['spotify_id' => $spotifyUser->id],
-                [
+            $existingUser = User::where('spotify_id', $spotifyUser->id)->first();
+            
+            if ($existingUser) {
+                $existingUser->update([
+                    'name' => $spotifyUser->display_name,
+                    'email' => $spotifyUser->email ?? $existingUser->email,
+                    'spotify_display_name' => $spotifyUser->display_name,
+                    'spotify_email' => $spotifyUser->email ?? $existingUser->spotify_email,
+                    'access_token' => $accessToken,
+                    'refresh_token' => $refreshToken,
+                    'token_expires_at' => now()->addHours(1),
+                ]);
+                
+                $user = $existingUser;
+                
+                // Check if they have accepted current terms
+                if (!$user->hasAcceptedCurrentTerms()) {
+                    session([
+                        'spotify_access_token' => $accessToken,
+                        'spotify_refresh_token' => $refreshToken,
+                        'spotify_user_id' => $user->id,
+                    ]);
+                    
+                    // Redirect to homepage with modal flag (terms updated)
+                    return redirect()->route('home')
+                        ->with('show_terms_modal', true)
+                        ->with('terms_updated', true);
+                }
+                
+                session([
+                    'spotify_access_token' => $accessToken,
+                    'spotify_refresh_token' => $refreshToken,
+                    'spotify_user_id' => $user->id,
+                ]);
+                
+                return redirect()->route('dashboard')->with('success', 'Welcome back!');
+            } else {
+                // New user - create account but don't set terms yet
+                $user = User::create([
+                    'spotify_id' => $spotifyUser->id,
                     'name' => $spotifyUser->display_name,
                     'email' => $spotifyUser->email ?? null,
                     'spotify_display_name' => $spotifyUser->display_name,
                     'spotify_email' => $spotifyUser->email ?? null,
                     'access_token' => $accessToken,
                     'refresh_token' => $refreshToken,
-                    'token_expires_at' => now()->addHours(1), // Spotify tokens expire after 1 hour
-                ]
-            );
-
-            // Store tokens in session for immediate use
-            session([
-                'spotify_access_token' => $accessToken,
-                'spotify_refresh_token' => $refreshToken,
-                'spotify_user_id' => $user->id,
-            ]);
-
-            return redirect()->route('dashboard')->with('success', 'Successfully connected to Spotify!');
+                    'token_expires_at' => now()->addHours(1),
+                ]);
+                
+                session([
+                    'spotify_access_token' => $accessToken,
+                    'spotify_refresh_token' => $refreshToken,
+                    'spotify_user_id' => $user->id,
+                ]);
+                
+                // Redirect to homepage with modal flag (new user)
+                return redirect()->route('home')
+                    ->with('show_terms_modal', true)
+                    ->with('new_user', true);
+            }
         }
 
         return redirect()->route('home')->with('error', 'Failed to connect to Spotify.');
@@ -100,9 +137,20 @@ class SpotifyController extends Controller
     public function dashboard()
     {
         $accessToken = session('spotify_access_token');
+        $userId = session('spotify_user_id');
 
         if (!$accessToken) {
             return redirect()->route('home')->with('error', 'Please connect to Spotify first.');
+        }
+
+        // Check if user has accepted terms
+        if ($userId) {
+            $user = User::find($userId);
+            if ($user && !$user->hasAcceptedCurrentTerms()) {
+                return redirect()->route('home')
+                    ->with('show_terms_modal', true)
+                    ->with('error', 'Please accept the terms and conditions to continue.');
+            }
         }
 
         $api = new SpotifyWebAPI();
@@ -140,6 +188,16 @@ class SpotifyController extends Controller
 
         if (!$accessToken) {
             return redirect()->route('home')->with('error', 'Please connect to Spotify first.');
+        }
+
+        // Check if user has accepted terms
+        if ($userId) {
+            $user = User::find($userId);
+            if ($user && !$user->hasAcceptedCurrentTerms()) {
+                return redirect()->route('home')
+                    ->with('show_terms_modal', true)
+                    ->with('error', 'Please accept the terms and conditions to continue.');
+            }
         }
 
         $api = new SpotifyWebAPI();
@@ -711,6 +769,12 @@ class SpotifyController extends Controller
             return response()->json(['error' => 'User not authenticated'], 401);
         }
 
+        // Check if user has accepted terms
+        $user = User::find($userId);
+        if (!$user || !$user->hasAcceptedCurrentTerms()) {
+            return response()->json(['error' => 'Please accept terms and conditions first'], 403);
+        }
+
         // Validate files
         if (!$request->hasFile('history_files')) {
             return response()->json(['error' => 'No files uploaded'], 422);
@@ -817,7 +881,7 @@ class SpotifyController extends Controller
 
                     // Bulk insert
                     if (!empty($records)) {
-                        \App\Models\ImportedStreamingHistory::insert($records);
+                        ImportedStreamingHistory::insert($records);
                     }
                 }
 
@@ -830,7 +894,7 @@ class SpotifyController extends Controller
         }
 
         // Update user's total listening minutes (combine imported + current tracking)
-        $user = \App\Models\User::find($userId);
+        $user = User::find($userId);
         if ($user) {
             // Get imported minutes
             $importedMinutes = ImportedStreamingHistory::where('user_id', $userId)
@@ -866,6 +930,12 @@ class SpotifyController extends Controller
         
         if (!$userId) {
             return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        // Check if user has accepted terms
+        $user = User::find($userId);
+        if (!$user || !$user->hasAcceptedCurrentTerms()) {
+            return response()->json(['error' => 'Please accept terms and conditions first'], 403);
         }
 
         // Validate files
@@ -997,10 +1067,10 @@ class SpotifyController extends Controller
         
         // Format dates
         if ($stats['oldest_date']) {
-            $stats['oldest_date'] = \Carbon\Carbon::parse($stats['oldest_date'])->format('Y-m-d');
+            $stats['oldest_date'] = Carbon::parse($stats['oldest_date'])->format('Y-m-d');
         }
         if ($stats['newest_date']) {
-            $stats['newest_date'] = \Carbon\Carbon::parse($stats['newest_date'])->format('Y-m-d');
+            $stats['newest_date'] = Carbon::parse($stats['newest_date'])->format('Y-m-d');
         }
 
         return response()->json($stats);
@@ -1019,15 +1089,15 @@ class SpotifyController extends Controller
             return response()->json(['error' => 'User not authenticated'], 401);
         }
 
-        $totalEntries = \App\Models\ImportedStreamingHistory::where('user_id', $userId)->count();
-        $totalMinutes = \App\Models\ImportedStreamingHistory::where('user_id', $userId)
+        $totalEntries = ImportedStreamingHistory::where('user_id', $userId)->count();
+        $totalMinutes = ImportedStreamingHistory::where('user_id', $userId)
             ->sum('ms_played') / 1000 / 60;
         
-        $oldestEntry = \App\Models\ImportedStreamingHistory::where('user_id', $userId)
+        $oldestEntry = ImportedStreamingHistory::where('user_id', $userId)
             ->orderBy('played_at', 'asc')
             ->first();
         
-        $newestEntry = \App\Models\ImportedStreamingHistory::where('user_id', $userId)
+        $newestEntry = ImportedStreamingHistory::where('user_id', $userId)
             ->orderBy('played_at', 'desc')
             ->first();
 
@@ -1041,13 +1111,44 @@ class SpotifyController extends Controller
     }
 
     /**
-     * Logout and clear Spotify session.
+     * Handle user logout.
      *
      * @return \Illuminate\Http\RedirectResponse
      */
     public function logout()
     {
-        session()->forget(['spotify_access_token', 'spotify_refresh_token']);
+        session()->forget(['spotify_access_token', 'spotify_refresh_token', 'spotify_user_id']);
         return redirect()->route('home')->with('success', 'Disconnected from Spotify.');
+    }
+
+    /**
+     * Accept terms and conditions.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function acceptTerms(Request $request)
+    {
+        $userId = session('spotify_user_id');
+        
+        if (!$userId) {
+            return response()->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $user = User::find($userId);
+        
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $user->update([
+            'accepted_terms_version' => config('terms.version'),
+            'terms_accepted_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'redirect' => route('dashboard')
+        ]);
     }
 }

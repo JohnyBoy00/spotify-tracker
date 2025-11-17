@@ -88,7 +88,48 @@
             }
         </style>
     </head>
-    <body class="bg-black text-white overflow-x-hidden" x-data="{ loginModal: false, termsAccepted: false }">
+    <body class="bg-black text-white overflow-x-hidden" x-data="{ 
+        loginModal: {{ session('show_terms_modal') ? 'true' : 'false' }}, 
+        termsAccepted: false,
+        isAcceptingTerms: false,
+        async acceptTermsAndContinue() {
+            if (!this.termsAccepted || this.isAcceptingTerms) return;
+            
+            this.isAcceptingTerms = true;
+            
+            // Check if user is authenticated
+            const isAuthenticated = {{ session('spotify_user_id') ? 'true' : 'false' }};
+            
+            if (isAuthenticated) {
+                // User returned from OAuth, save terms acceptance
+                try {
+                    const response = await fetch('{{ route('accept.terms') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        window.location.href = data.redirect;
+                    } else {
+                        alert('Error accepting terms. Please try again.');
+                        this.isAcceptingTerms = false;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error accepting terms. Please try again.');
+                    this.isAcceptingTerms = false;
+                }
+            } else {
+                // User hasn't authenticated yet, proceed to OAuth
+                window.location.href = '{{ route('spotify.auth') }}';
+            }
+        }
+    }">
         <!-- Animated background gradient -->
         <div class="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black"></div>
         <div class="fixed inset-0 opacity-30 pointer-events-none">
@@ -198,9 +239,9 @@
                         </div>
                     </div>
                     
-                    <button @click="loginModal = true" class="px-6 py-2.5 spotify-gradient hover:shadow-lg hover:shadow-green-500/50 text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105">
+                    <a href="{{ route('spotify.auth') }}" class="px-6 py-2.5 spotify-gradient hover:shadow-lg hover:shadow-green-500/50 text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105">
                         Get Started
-                    </button>
+                    </a>
                 </div>
             </div>
         </nav>
@@ -223,7 +264,7 @@
                 </p>
                 
                 <div class="flex flex-col sm:flex-row gap-4 justify-center items-center fade-in-up opacity-0 delay-150">
-                    <button @click="loginModal = true" class="group inline-flex items-center gap-3 px-8 py-4 spotify-gradient hover:shadow-lg hover:shadow-green-500/50 text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 text-lg">
+                    <a href="{{ route('spotify.auth') }}" class="group inline-flex items-center gap-3 px-8 py-4 spotify-gradient hover:shadow-lg hover:shadow-green-500/50 text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 text-lg">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
                         </svg>
@@ -231,7 +272,7 @@
                         <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                         </svg>
-                    </button>
+                    </a>
                     <a href="{{ route('search') }}" class="inline-flex items-center gap-2 px-8 py-4 glass-card hover:bg-white/10 text-white font-semibold rounded-full transition-all duration-300">
                         Browse Music
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -434,8 +475,20 @@
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="text-2xl font-bold text-white">Connect with Spotify</h3>
-                                <p class="text-sm text-gray-400">Review terms before continuing</p>
+                                <h3 class="text-2xl font-bold text-white">
+                                    @if(session('terms_updated'))
+                                        Terms & Conditions Updated
+                                    @else
+                                        Connect with Spotify
+                                    @endif
+                                </h3>
+                                <p class="text-sm text-gray-400">
+                                    @if(session('terms_updated'))
+                                        Please review and accept our updated terms
+                                    @else
+                                        Review terms before continuing
+                                    @endif
+                                </p>
                             </div>
                         </div>
                         <button @click="loginModal = false" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
@@ -547,15 +600,16 @@
                         <button @click="loginModal = false" class="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-all">
                             Cancel
                         </button>
-                        <a :href="termsAccepted ? '{{ route('spotify.auth') }}' : '#'" 
-                           @click="if (!termsAccepted) { $event.preventDefault(); }"
-                           :class="termsAccepted ? 'opacity-100 cursor-pointer' : 'opacity-50 cursor-not-allowed'"
-                           class="flex-1 px-6 py-3 spotify-gradient text-white font-semibold rounded-xl transition-all text-center flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-green-500/50">
+                        <button 
+                            @click="acceptTermsAndContinue()" 
+                            :disabled="!termsAccepted || isAcceptingTerms"
+                            :class="(termsAccepted && !isAcceptingTerms) ? 'opacity-100 cursor-pointer hover:shadow-lg hover:shadow-green-500/50' : 'opacity-50 cursor-not-allowed'"
+                            class="flex-1 px-6 py-3 spotify-gradient text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
                             </svg>
-                            Continue with Spotify
-                        </a>
+                            <span x-text="isAcceptingTerms ? 'Processing...' : '{{ session('terms_updated') ? 'Accept Updated Terms' : 'Continue with Spotify' }}'"></span>
+                        </button>
                     </div>
                 </div>
             </div>

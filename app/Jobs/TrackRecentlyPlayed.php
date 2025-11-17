@@ -35,6 +35,12 @@ class TrackRecentlyPlayed implements ShouldQueue
      */
     public function handle(): void
     {
+        // Skip if user hasn't accepted terms and conditions
+        if (!$this->user->hasAcceptedCurrentTerms()) {
+            Log::info("Skipping tracking for user {$this->user->id} - terms not accepted");
+            return;
+        }
+
         // Skip if user has no access token
         if (!$this->user->access_token) {
             return;
