@@ -94,19 +94,26 @@
                         </h1>
                     </div>
                     <!-- Navigation Links -->
+                    @if($user)
                     <div class="hidden md:flex items-center gap-6">
                         <a href="{{ route('dashboard') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Dashboard</a>
                         <a href="{{ route('stats') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Stats</a>
                         <a href="{{ route('search') }}" class="nav-link active py-5 px-2 text-sm font-medium">Search</a>
                     </div>
+                    @else
+                    <div class="hidden md:flex items-center gap-6">
+                        <a href="{{ route('home') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Home</a>
+                        <a href="{{ route('search') }}" class="nav-link active py-5 px-2 text-sm font-medium">Search</a>
+                    </div>
+                    @endif
                 </div>
                 
                 <!-- Search Bar -->
-                <div class="flex-1 max-w-md mx-8 hidden lg:block">
+                <div class="flex-1 max-w-2xl mx-8 hidden md:block">
                     <form action="{{ route('search') }}" method="GET">
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
                             </div>
@@ -114,14 +121,16 @@
                                 type="text" 
                                 name="q" 
                                 value="{{ request('q') }}"
-                                placeholder="Search songs..." 
-                                class="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
+                                placeholder="Search for songs, artists, or albums..." 
+                                class="w-full pl-12 pr-4 py-3 bg-gray-900/70 border border-gray-700 rounded-lg text-white placeholder-gray-400 text-base focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/50 transition-all"
+                                autofocus
                             >
                         </div>
                     </form>
                 </div>
 
                 <div class="flex items-center gap-4">
+                    @if($user)
                     <!-- User Menu Dropdown -->
                     <div class="relative" x-data="{ open: false }" @click.away="open = false">
                         <button @click="open = !open" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-all duration-200 group">
@@ -196,6 +205,12 @@
                             </div>
                         </div>
                     </div>
+                    @else
+                    <!-- Login Button for Non-Logged-In Users -->
+                    <a href="{{ route('home') }}" class="px-6 py-2.5 spotify-gradient hover:shadow-lg hover:shadow-green-500/50 text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105">
+                        Login
+                    </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -203,6 +218,41 @@
 
     <!-- Main Content -->
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Login Banner for Non-Logged-In Users -->
+        @if(!$user)
+            <div class="mb-8 glass-card rounded-2xl p-6 border-2 border-green-500/30 shadow-2xl">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-xl font-bold text-white mb-2">Unlock More Features!</h3>
+                        <p class="text-gray-300 mb-4">
+                            You're currently browsing as a guest. Connect your Spotify account to access personalized features like listening history, analytics, top tracks, and more!
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            <a href="{{ route('home') }}" class="inline-flex items-center gap-2 px-6 py-2.5 spotify-gradient hover:shadow-lg hover:shadow-green-500/50 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                                </svg>
+                                Connect with Spotify
+                            </a>
+                            <a href="{{ route('home') }}#features" class="inline-flex items-center gap-2 px-6 py-2.5 glass-card hover:bg-white/10 text-white font-medium rounded-lg transition-all duration-300">
+                                Learn More
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         <!-- Error Message -->
         @if(session('error'))
@@ -221,34 +271,8 @@
                 <p class="text-gray-400">Showing results for "<span class="text-green-400">{{ request('q') }}</span>"</p>
             @else
                 <h1 class="text-4xl font-bold mb-2">Search Spotify</h1>
-                <p class="text-gray-400">Find any song, artist, or album</p>
+                <p class="text-gray-400">Use the search bar above to find any song, artist, or album</p>
             @endif
-        </div>
-
-        <!-- Search Box -->
-        <div class="glass-card rounded-2xl p-6 mb-8 shadow-2xl">
-            <form action="{{ route('search') }}" method="GET">
-                <div class="flex gap-3">
-                    <div class="flex-1 relative">
-                        <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                        </div>
-                        <input 
-                            type="text" 
-                            name="q" 
-                            value="{{ request('q') }}"
-                            placeholder="Search for songs, artists, or albums..." 
-                            class="w-full pl-14 pr-4 py-4 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 text-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/50 transition-all"
-                            autofocus
-                        >
-                    </div>
-                    <button type="submit" class="px-8 py-4 spotify-gradient hover:shadow-lg hover:shadow-green-500/50 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105">
-                        Search
-                    </button>
-                </div>
-            </form>
         </div>
 
         @if(request('q'))
@@ -305,9 +329,9 @@
                 <h3 class="text-2xl font-bold mb-2">Start Searching</h3>
                 <p class="text-gray-400 mb-6">Find any song, artist, or album on Spotify</p>
                 <div class="flex flex-wrap justify-center gap-2">
-                    <span class="px-4 py-2 bg-gray-800 rounded-full text-sm text-gray-300">Try: "Radiohead"</span>
-                    <span class="px-4 py-2 bg-gray-800 rounded-full text-sm text-gray-300">Try: "Let Down"</span>
-                    <span class="px-4 py-2 bg-gray-800 rounded-full text-sm text-gray-300">Try: "OK Computer"</span>
+                    <a href="{{ route('search') }}?q=Radiohead" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-full text-sm text-gray-300 hover:text-white transition-all">Try: "Radiohead"</a>
+                    <a href="{{ route('search') }}?q=Let+Down" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-full text-sm text-gray-300 hover:text-white transition-all">Try: "Let Down"</a>
+                    <a href="{{ route('search') }}?q=OK+Computer" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-full text-sm text-gray-300 hover:text-white transition-all">Try: "OK Computer"</a>
                 </div>
             </div>
         @endif

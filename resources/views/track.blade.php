@@ -99,10 +99,18 @@
                         </h1>
                     </div>
                     <!-- Navigation Links -->
+                    @if($user)
                     <div class="hidden md:flex items-center gap-6">
                         <a href="{{ route('dashboard') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Dashboard</a>
                         <a href="{{ route('stats') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Stats</a>
+                        <a href="{{ route('search') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Search</a>
                     </div>
+                    @else
+                    <div class="hidden md:flex items-center gap-6">
+                        <a href="{{ route('home') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Home</a>
+                        <a href="{{ route('search') }}" class="nav-link py-5 px-2 text-sm font-medium text-gray-400">Search</a>
+                    </div>
+                    @endif
                 </div>
                 
                 <!-- Search Bar with Autocomplete -->
@@ -129,6 +137,7 @@
                 </div>
 
                 <div class="flex items-center gap-4">
+                    @if($user)
                     <!-- User Menu Dropdown -->
                     <div class="relative" x-data="{ open: false }" @click.away="open = false">
                         <button @click="open = !open" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-all duration-200 group">
@@ -203,6 +212,12 @@
                             </div>
                         </div>
                     </div>
+                    @else
+                    <!-- Login Button for Non-Logged-In Users -->
+                    <a href="{{ route('home') }}" class="px-6 py-2.5 spotify-gradient hover:shadow-lg hover:shadow-green-500/50 text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105">
+                        Login
+                    </a>
+                    @endif
                 </div>
             </div>
         </div>

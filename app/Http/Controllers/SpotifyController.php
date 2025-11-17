@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\DailyListeningSummary;
+use App\Models\ImportedStreamingHistory;
+use App\Models\ListeningHistory;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use SpotifyWebAPI\Session;
@@ -63,7 +66,7 @@ class SpotifyController extends Controller
             $spotifyUser = $api->me();
 
             // Create or update user in database
-            $user = \App\Models\User::updateOrCreate(
+            $user = User::updateOrCreate(
                 ['spotify_id' => $spotifyUser->id],
                 [
                     'name' => $spotifyUser->display_name,
@@ -106,24 +109,21 @@ class SpotifyController extends Controller
         $api->setAccessToken($accessToken);
 
         try {
-            // Get user's top 5 tracks for the last month (short_term)
             $topTracks = $api->getMyTop('tracks', [
                 'limit' => 5,
                 'time_range' => 'short_term' // last ~4 weeks
             ]);
 
-            // Get recently played tracks
             $recentlyPlayed = $api->getMyRecentTracks([
                 'limit' => 20
             ]);
 
-            // Get user profile
             $user = $api->me();
 
             return view('dashboard', compact('topTracks', 'recentlyPlayed', 'user'));
 
-        } catch (\Exception $e) {
-            return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $e->getMessage());
+        } catch (\Exception $error) {
+            return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $error->getMessage());
         }
     }
 
@@ -179,7 +179,7 @@ class SpotifyController extends Controller
             $weeklyChartData = [];
             $monthlyChartData = [];
             if ($userId) {
-                $dbUser = \App\Models\User::find($userId);
+                $dbUser = User::find($userId);
                 if ($dbUser) {
                     $listeningMinutes = [
                         'today' => DailyListeningSummary::where('user_id', $userId)
@@ -198,8 +198,8 @@ class SpotifyController extends Controller
                     ];
 
                     // Get daily data for the current week (Monday to Sunday)
-                    $startOfWeek = now()->startOfWeek(); // Monday
-                    $endOfWeek = now()->endOfWeek(); // Sunday
+                    $startOfWeek = now()->startOfWeek();
+                    $endOfWeek = now()->endOfWeek();
                     
                     $weeklyData = DailyListeningSummary::where('user_id', $userId)
                         ->whereBetween('date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
@@ -213,13 +213,13 @@ class SpotifyController extends Controller
                         
                         // Find matching data by comparing date strings
                         $dayData = $weeklyData->first(function($item) use ($dateString) {
-                            return \Carbon\Carbon::parse($item->date)->toDateString() === $dateString;
+                            return Carbon::parse($item->date)->toDateString() === $dateString;
                         });
                         
                         $weeklyChartData[] = [
-                            'label' => $date->format('D'), // Mon, Tue, Wed, etc.
+                            'label' => $date->format('D'),
                             'y' => $dayData ? (int)$dayData->total_minutes : 0,
-                            'date' => $date->format('M j'), // Jan 1, etc.
+                            'date' => $date->format('M j'),
                         ];
                     }
 
@@ -302,6 +302,8 @@ class SpotifyController extends Controller
 
     /**
      * Search for tracks on Spotify.
+     * This endpoint is accessible to both logged-in and non-logged-in users.
+     * Non-logged-in users can search, but won't have access to personalized features.
      *
      * @param Request $request
      * @return \Illuminate\View\View
@@ -309,36 +311,63 @@ class SpotifyController extends Controller
     public function search(Request $request)
     {
         $accessToken = session('spotify_access_token');
+        $user = null;
+        $results = null;
 
-        if (!$accessToken) {
-            return redirect()->route('home')->with('error', 'Please connect to Spotify first.');
+        if ($accessToken) {
+            $api = new SpotifyWebAPI();
+            $api->setAccessToken($accessToken);
+
+            try {
+                $user = $api->me();
+            } catch (\Exception $error) {
+                session()->forget(['spotify_access_token', 'spotify_refresh_token', 'spotify_user_id']); // Clear session if token is expired
+            }
         }
 
-        $api = new SpotifyWebAPI();
-        $api->setAccessToken($accessToken);
+        if ($request->has('q') && !empty($request->query('q'))) {
+            $query = $request->query('q');
+            
+            // Use a fresh API instance with client credentials for non-logged-in users
+            if (!$accessToken) {
+                try {
+                    $session = new Session(
+                        config('spotify.client_id'),
+                        config('spotify.client_secret')
+                    );
+                    $session->requestCredentialsToken();
+                    $accessToken = $session->getAccessToken();
+                } catch (\Exception $error) {
+                    return view('search', [
+                        'user' => null,
+                        'results' => null,
+                        'error' => 'Unable to connect to Spotify. Please try again later.'
+                    ]);
+                }
+            }
 
-        try {
-            $user = $api->me();
-            $results = null;
-
-            // If there's a search query, perform the search
-            if ($request->has('q') && !empty($request->query('q'))) {
-                $query = $request->query('q');
+            try {
+                $api = new SpotifyWebAPI();
+                $api->setAccessToken($accessToken);
                 
                 $results = $api->search($query, 'track', [
                     'limit' => 50
                 ]);
+            } catch (\Exception $error) {
+                return view('search', [
+                    'user' => $user,
+                    'results' => null,
+                    'error' => 'Error searching Spotify: ' . $error->getMessage()
+                ]);
             }
-
-            return view('search', compact('user', 'results'));
-
-        } catch (\Exception $error) {
-            return redirect()->route('home')->with('error', 'Error searching Spotify: ' . $error->getMessage());
         }
+
+        return view('search', compact('user', 'results'));
     }
 
     /**
      * API endpoint for autocomplete search.
+     * This endpoint is accessible to both logged-in and non-logged-in users.
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -347,8 +376,18 @@ class SpotifyController extends Controller
     {
         $accessToken = session('spotify_access_token');
 
+        // If user is not logged in, use client credentials
         if (!$accessToken) {
-            return response()->json(['error' => 'Not authenticated'], 401);
+            try {
+                $session = new Session(
+                    config('spotify.client_id'),
+                    config('spotify.client_secret')
+                );
+                $session->requestCredentialsToken();
+                $accessToken = $session->getAccessToken();
+            } catch (\Exception $error) {
+                return response()->json(['error' => 'Unable to connect to Spotify'], 500);
+            }
         }
 
         $api = new SpotifyWebAPI();
@@ -358,34 +397,25 @@ class SpotifyController extends Controller
             $query = $request->query('q');
             
             if (empty($query)) {
-                return response()->json(['tracks' => []]);
+                return response()->json(['tracks' => ['items' => []]]);
             }
 
             $results = $api->search($query, 'track', [
-                'limit' => 10 // Limit to 10 for autocomplete
+                'limit' => 10
             ]);
 
-            // Format results for frontend
-            $tracks = array_map(function($track) {
-                return [
-                    'id' => $track->id,
-                    'name' => $track->name,
-                    'artists' => implode(', ', array_map(fn($artist) => $artist->name, $track->artists)),
-                    'image' => $track->album->images[2]->url ?? null,
-                    'duration' => gmdate('i:s', $track->duration_ms / 1000),
-                    'spotify_url' => $track->external_urls->spotify,
-                ];
-            }, $results->tracks->items);
+            // Return full track objects for Alpine.js to use
+            return response()->json(['tracks' => $results->tracks]);
 
-            return response()->json(['tracks' => $tracks]);
-
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+        } catch (\Exception $error) {
+            \Log::error('API Search Error: ' . $error->getMessage());
+            return response()->json(['error' => $error->getMessage()], 500);
         }
     }
 
     /**
      * Display track details page.
+     * This endpoint is accessible to both logged-in and non-logged-in users.
      *
      * @param string $id
      * @return \Illuminate\View\View
@@ -393,40 +423,54 @@ class SpotifyController extends Controller
     public function trackDetails($id)
     {
         $accessToken = session('spotify_access_token');
+        $user = null;
 
+        // If user is not logged in, use client credentials
         if (!$accessToken) {
-            return redirect()->route('home')->with('error', 'Please connect to Spotify first.');
+            try {
+                $session = new Session(
+                    config('spotify.client_id'),
+                    config('spotify.client_secret')
+                );
+                $session->requestCredentialsToken();
+                $accessToken = $session->getAccessToken();
+            } catch (\Exception $error) {
+                return redirect()->route('home')->with('error', 'Unable to connect to Spotify.');
+            }
+        } else {
+            $api = new SpotifyWebAPI();
+            $api->setAccessToken($accessToken);
+            try {
+                $user = $api->me();
+            } catch (\Exception $error) {
+                session()->forget(['spotify_access_token', 'spotify_refresh_token', 'spotify_user_id']); // Clear session if token is expired
+                $user = null;
+            }
         }
 
         $api = new SpotifyWebAPI();
         $api->setAccessToken($accessToken);
 
+        // Get track details, lyrics, audio features, and YouTube music video
         try {
-            // Get track details
             $track = $api->getTrack($id);
             
-            // Try to get audio features (may fail with 403 if no permission)
             $audioFeatures = null;
             try {
                 $audioFeatures = $api->getAudioFeatures($id);
             } catch (\Exception $error) {
                 \Log::info('Could not fetch audio features: ' . $error->getMessage());
             }
-            
-            // Get user profile
-            $user = $api->me();
 
-            // Search for YouTube music video
             $youtubeVideoId = $this->searchYouTubeVideo($track);
 
-            // Fetch song lyrics
             $lyrics = $this->fetchLyrics($track);
 
             return view('track', compact('track', 'audioFeatures', 'user', 'youtubeVideoId', 'lyrics'));
 
         } catch (\Exception $error) {
             \Log::error('Track details error: ' . $error->getMessage());
-            return redirect()->route('search')->with('error', 'Error fetching track details: ' . $error->getMessage());
+            return redirect()->route('home')->with('error', 'Error fetching track details: ' . $error->getMessage());
         }
     }
 
@@ -732,10 +776,10 @@ class SpotifyController extends Controller
                                 continue;
                             }
 
-                            $playedAt = \Carbon\Carbon::parse($entry['ts']);
+                            $playedAt = Carbon::parse($entry['ts']);
 
                             // Check if exists
-                            $exists = \App\Models\ImportedStreamingHistory::where('user_id', $userId)
+                            $exists = ImportedStreamingHistory::where('user_id', $userId)
                                 ->where('played_at', $playedAt)
                                 ->where('spotify_track_uri', $entry['spotify_track_uri'])
                                 ->exists();
@@ -789,11 +833,11 @@ class SpotifyController extends Controller
         $user = \App\Models\User::find($userId);
         if ($user) {
             // Get imported minutes
-            $importedMinutes = \App\Models\ImportedStreamingHistory::where('user_id', $userId)
+            $importedMinutes = ImportedStreamingHistory::where('user_id', $userId)
                 ->sum('ms_played') / 1000 / 60;
             
             // Get current tracking minutes
-            $currentMinutes = \App\Models\ListeningHistory::where('user_id', $userId)
+            $currentMinutes = ListeningHistory::where('user_id', $userId)
                 ->sum('listened_ms') / 1000 / 60;
             
             // Combine both
