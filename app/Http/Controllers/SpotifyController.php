@@ -343,6 +343,17 @@ class SpotifyController extends Controller
             });
             $topGenres = array_slice($genreData, 0, 20, true);
 
+            $weeklyTopTracks = [];
+            $selectedWeek = $request->query('week', now()->format('Y-\WW'));
+
+            if ($request->ajax() && $request->query('type') === 'weekly' && $userId) {
+                $weeklyTopTracks = $this->getWeeklyTopTracks($userId, $selectedWeek);
+                return response()->json([
+                    'weeklyTopTracks' => $weeklyTopTracks,
+                    'selectedWeek' => $selectedWeek,
+                ]);
+            }
+
             // If AJAX request, return only the monthly chart data
             if ($request->ajax() || $request->query('ajax')) {
                 return response()->json([
@@ -351,11 +362,103 @@ class SpotifyController extends Controller
                 ]);
             }
 
-            return view('stats', compact('topTracks', 'topArtists', 'topGenres', 'user', 'listeningMinutes', 'weeklyChartData', 'monthlyChartData', 'selectedMonth'));
+            return view('stats', compact('topTracks', 'topArtists', 'topGenres', 'user', 'listeningMinutes', 'weeklyChartData', 'monthlyChartData', 'selectedMonth', 'weeklyTopTracks', 'selectedWeek'));
 
         } catch (\Exception $error) {
             return redirect()->route('home')->with('error', 'Error fetching data from Spotify: ' . $error->getMessage());
         }
+    }
+
+    /**
+     * Get top 5 tracks for a specific week from listening history.
+     *
+     * @param int $userId
+     * @param string $week Format: Y-Www (e.g., 2025-W47)
+     * @return array
+     */
+    private function getWeeklyTopTracks($userId, $week)
+    {
+        // Parse the week string (e.g., "2025-W47")
+        $parts = explode('-W', $week);
+        $year = (int)$parts[0];
+        $weekNumber = (int)$parts[1];
+        
+        $weekDate = Carbon::now()->setISODate($year, $weekNumber);
+        
+        $startOfWeek = $weekDate->copy()->startOfWeek();
+        $endOfWeek = $weekDate->copy()->endOfWeek();
+
+        $topTracks = \DB::table('listening_history')
+            ->select(
+                'track_id',
+                'track_name',
+                'artist_name',
+                'album_name',
+                \DB::raw('COUNT(*) as play_count'),
+                \DB::raw('SUM(listened_ms) as total_listened_ms')
+            )
+            ->where('user_id', $userId)
+            ->whereBetween('played_at', [$startOfWeek, $endOfWeek])
+            ->groupBy('track_id', 'track_name', 'artist_name', 'album_name')
+            ->orderByDesc('play_count')
+            ->limit(5)
+            ->get();
+
+        $accessToken = session('spotify_access_token');
+        $api = null;
+        if ($accessToken) {
+            try {
+                $api = new SpotifyWebAPI();
+                $api->setAccessToken($accessToken);
+            } catch (\Exception $error) {
+                \Log::warning("Failed to initialize Spotify API for album artwork: " . $error->getMessage());
+            }
+        }
+
+        $formattedTracks = [];
+        
+        $trackIds = $topTracks->pluck('track_id')->filter()->toArray();
+        $spotifyTracks = [];
+        
+        if ($api && !empty($trackIds)) {
+            try {
+                $batchResult = $api->getTracks($trackIds);
+                foreach ($batchResult->tracks as $spotifyTrack) {
+                    if ($spotifyTrack) {
+                        $spotifyTracks[$spotifyTrack->id] = $spotifyTrack;
+                    }
+                }
+            } catch (\Exception $error) {
+                \Log::warning("Failed to batch fetch album artwork: " . $error->getMessage());
+            }
+        }
+        
+        foreach ($topTracks as $index => $track) {
+            $albumImage = null;
+            
+            if (isset($spotifyTracks[$track->track_id])) {
+                $spotifyTrack = $spotifyTracks[$track->track_id];
+                if (isset($spotifyTrack->album->images[2])) {
+                    $albumImage = $spotifyTrack->album->images[2]->url;
+                } elseif (isset($spotifyTrack->album->images[0])) {
+                    $albumImage = $spotifyTrack->album->images[0]->url;
+                }
+            }
+            
+            $formattedTracks[] = [
+                'rank' => $index + 1,
+                'track_id' => $track->track_id,
+                'track_name' => $track->track_name,
+                'artist_name' => $track->artist_name,
+                'album_name' => $track->album_name,
+                'album_image' => $albumImage,
+                'play_count' => $track->play_count,
+                'total_minutes' => round($track->total_listened_ms / 60000, 1),
+                'total_hours' => round($track->total_listened_ms / 3600000, 2),
+            ];
+        }
+
+        return $formattedTracks;
     }
 
     /**

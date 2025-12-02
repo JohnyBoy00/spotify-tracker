@@ -138,6 +138,22 @@
             opacity: 1;
             margin-top: 0.75rem;
         }
+        
+        /* Custom week picker scrollbar */
+        #weeks-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+        #weeks-grid::-webkit-scrollbar-track {
+            background: #1F2937;
+            border-radius: 3px;
+        }
+        #weeks-grid::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+        #weeks-grid::-webkit-scrollbar-thumb:hover {
+            background: #6B7280;
+        }
     </style>
 </head>
 <body class="bg-black text-white min-h-screen overflow-x-hidden">
@@ -321,6 +337,9 @@
                 <a href="?range=long_term" class="time-range-link px-4 py-2 rounded-lg text-sm font-medium transition-all {{ request('range', 'medium_term') == 'long_term' ? 'spotify-gradient text-white shadow-lg' : 'bg-gray-800 text-gray-300 hover:bg-gray-700' }}" data-range="long_term">
                     All Time
                 </a>
+                <button onclick="switchToWeeklyTracks()" id="weekly-range-btn" class="time-range-link px-4 py-2 rounded-lg text-sm font-medium transition-all bg-gray-800 text-gray-300 hover:bg-gray-700" data-range="weekly">
+                    Weekly
+                </button>
                 <!-- Genre Info Icon (shown only on genres tab) -->
                 <div id="genres-info-icon" class="tooltip-container ml-2" style="display: none;">
                     <svg class="w-5 h-5 text-gray-500 hover:text-purple-400 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
@@ -330,9 +349,105 @@
                 </div>
             </div>
 
-            <!-- Tracks Content -->
+            <!-- Week Navigation (shown only when Weekly is active) -->
+            <div id="week-navigation" class="flex flex-wrap gap-2 mb-6 items-center justify-between" style="display: none;" x-data="{ showWeekPicker: false }">
+                <div class="flex items-center gap-3">
+                    <button onclick="navigateWeek('prev')" id="week-prev-btn" class="px-3 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-all" title="Previous week">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="relative flex items-center gap-2">
+                        <button @click="showWeekPicker = !showWeekPicker" id="week-display-btn" class="px-4 py-2 rounded-lg bg-gray-800 text-gray-300 border border-gray-700 hover:border-green-500 transition-all text-sm font-medium min-w-[200px] text-center flex items-center justify-center gap-2">
+                            <span id="week-display">
+                                @php
+                                    $parts = explode('-W', $selectedWeek);
+                                    echo isset($parts[1]) ? "Week {$parts[1]}, {$parts[0]}" : "Week {$selectedWeek}";
+                                @endphp
+                            </span>
+                            <svg class="w-4 h-4 transition-transform" :class="{'rotate-180': showWeekPicker}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        
+                        <!-- Custom Week Picker Dropdown -->
+                        <div x-show="showWeekPicker" 
+                             @click.away="showWeekPicker = false"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl z-50 p-4"
+                             style="display: none;">
+                            <div class="space-y-3">
+                                <!-- Header with month navigation -->
+                                <div class="flex items-center justify-between">
+                                    <button onclick="changeCalendarMonth(-1)" class="p-1.5 hover:bg-gray-800 rounded-lg transition-all">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="text-center">
+                                        <h3 id="calendar-month-year" class="text-base font-semibold text-gray-200">November 2025</h3>
+                                        <p class="text-xs text-gray-500">Click any day to select that week</p>
+                                    </div>
+                                    <button onclick="changeCalendarMonth(1)" class="p-1.5 hover:bg-gray-800 rounded-lg transition-all">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Calendar grid -->
+                                <div class="bg-gray-800/50 rounded-lg p-2.5">
+                                    <!-- Day headers -->
+                                    <div class="grid grid-cols-7 gap-1 mb-1.5">
+                                        <div class="text-center text-xs font-semibold text-gray-400 py-1">Mon</div>
+                                        <div class="text-center text-xs font-semibold text-gray-400 py-1">Tue</div>
+                                        <div class="text-center text-xs font-semibold text-gray-400 py-1">Wed</div>
+                                        <div class="text-center text-xs font-semibold text-gray-400 py-1">Thu</div>
+                                        <div class="text-center text-xs font-semibold text-gray-400 py-1">Fri</div>
+                                        <div class="text-center text-xs font-semibold text-gray-400 py-1">Sat</div>
+                                        <div class="text-center text-xs font-semibold text-gray-400 py-1">Sun</div>
+                                    </div>
+                                    
+                                    <!-- Calendar days -->
+                                    <div id="calendar-grid" class="grid grid-cols-7 gap-1">
+                                    </div>
+                                </div>
+                                
+                                <!-- Quick actions -->
+                                <div class="flex gap-2">
+                                    <button onclick="jumpToCurrentWeek()" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-all">
+                                        This Week
+                                    </button>
+                                    <button @click="showWeekPicker = false" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-medium transition-all">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="navigateWeek('next')" id="week-next-btn" class="px-3 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-all" title="Next week">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                    <button onclick="navigateWeek('current')" class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-all text-sm font-medium" title="Jump to current week">
+                        Today
+                    </button>
+                </div>
+                <div class="text-sm text-gray-400">
+                    <span class="hidden sm:inline">Showing top 5 tracks based on amount of times played</span>
+                    <span class="sm:hidden">Top 5 by listening time</span>
+                </div>
+            </div>
+
+            <!-- Tracks Content (Spotify API data) -->
             <div id="tracks-content" class="tab-content">
-                <div class="space-y-3">
+                <div class="space-y-3" id="spotify-tracks-list">
                     @foreach($topTracks->items as $index => $track)
                         <div class="track-card rounded-xl p-4 flex items-center gap-4">
                             <div class="rank-badge w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
@@ -352,6 +467,56 @@
                             </div>
                         </div>
                     @endforeach
+                </div>
+
+                <!-- Weekly Tracks (from listening history) -->
+                <div class="space-y-3" id="weekly-tracks-list" style="display: none;">
+                    @if(count($weeklyTopTracks) > 0)
+                        @foreach($weeklyTopTracks as $track)
+                            <div class="track-card rounded-xl p-4 flex items-center gap-4">
+                                <div class="rank-badge w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-white font-bold">{{ $track['rank'] }}</span>
+                                </div>
+                                @if(isset($track['album_image']) && $track['album_image'])
+                                    <img src="{{ $track['album_image'] }}" alt="Album" class="w-16 h-16 rounded-lg shadow-lg">
+                                @else
+                                    <div class="w-16 h-16 rounded-lg shadow-lg bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                                        </svg>
+                                    </div>
+                                @endif
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-semibold text-white text-lg truncate">{{ $track['track_name'] }}</p>
+                                    <p class="text-sm text-gray-400 truncate">{{ $track['artist_name'] }}</p>
+                                    <div class="flex gap-3 mt-1">
+                                        <span class="text-xs text-green-400">{{ $track['play_count'] }} plays</span>
+                                        <span class="text-xs text-blue-400">{{ $track['total_minutes'] }} min</span>
+                                    </div>
+                                </div>
+                                <div class="text-right hidden md:block">
+                                    <p class="text-sm text-gray-400 truncate max-w-xs">{{ $track['album_name'] }}</p>
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="text-center py-12">
+                            <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                            </svg>
+                            <p class="text-gray-400 text-lg">No listening data for this week</p>
+                            <p class="text-gray-500 text-sm mt-2">Start listening to music to see your weekly top tracks!</p>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="weekly-tracks-loading" style="display: none;" class="text-center py-12">
+                    <svg class="animate-spin h-12 w-12 text-green-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-gray-400">Loading weekly tracks...</p>
                 </div>
             </div>
 
@@ -716,6 +881,8 @@
             // Show/hide time range filter based on tab
             const timeRangeFilter = document.getElementById('time-range-filter');
             const genresInfoIcon = document.getElementById('genres-info-icon');
+            const weeklyRangeBtn = document.getElementById('weekly-range-btn');
+            const weekNavigation = document.getElementById('week-navigation');
             
             if (tab === 'minutes') {
                 timeRangeFilter.style.display = 'none';
@@ -730,15 +897,382 @@
             } else if (tab === 'genres') {
                 timeRangeFilter.style.display = 'flex';
                 genresInfoIcon.style.display = 'block';
+                weeklyRangeBtn.style.display = 'none';
+                weekNavigation.style.display = 'none';
+            } else if (tab === 'artists') {
+                timeRangeFilter.style.display = 'flex';
+                genresInfoIcon.style.display = 'none';
+                weeklyRangeBtn.style.display = 'none';
+                weekNavigation.style.display = 'none';
             } else {
                 timeRangeFilter.style.display = 'flex';
                 genresInfoIcon.style.display = 'none';
+                weeklyRangeBtn.style.display = 'inline-block';
             }
 
             // Update URL to remember the current tab
             const url = new URL(window.location);
             url.searchParams.set('tab', tab);
             window.history.pushState({}, '', url);
+        }
+
+        // Weekly tracks state
+        let isWeeklyMode = false;
+        let currentWeek = '{{ $selectedWeek }}';
+
+        /**
+         * Switch to weekly tracks view
+         */
+        async function switchToWeeklyTracks() {
+            isWeeklyMode = true;
+            
+            document.querySelectorAll('.time-range-link').forEach(btn => {
+                btn.classList.remove('spotify-gradient', 'text-white', 'shadow-lg');
+                btn.classList.add('bg-gray-800', 'text-gray-300', 'hover:bg-gray-700');
+            });
+            document.getElementById('weekly-range-btn').classList.add('spotify-gradient', 'text-white', 'shadow-lg');
+            document.getElementById('weekly-range-btn').classList.remove('bg-gray-800', 'text-gray-300', 'hover:bg-gray-700');
+            
+            const weekDisplay = document.getElementById('week-display');
+            weekDisplay.textContent = formatWeekDisplay(currentWeek);
+            
+            const [year, weekStr] = currentWeek.split('-W');
+            const weekNum = parseInt(weekStr);
+            // Estimate month from week number (approximate)
+            calendarYear = parseInt(year);
+            calendarMonth = Math.floor((weekNum - 1) * 7 / 30.5); // Rough estimate
+            if (calendarMonth > 11) calendarMonth = 11;
+            if (calendarMonth < 0) calendarMonth = 0;
+            renderCalendar();
+            
+            document.getElementById('week-navigation').style.display = 'flex';
+            document.getElementById('spotify-tracks-list').style.display = 'none';
+            
+            document.getElementById('weekly-tracks-loading').style.display = 'block';
+            document.getElementById('weekly-tracks-list').style.display = 'none';
+            
+            try {
+                const response = await fetch(`/stats?type=weekly&week=${currentWeek}&ajax=1`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await response.json();
+                
+                updateWeeklyTracksList(data.weeklyTopTracks);
+                
+                document.getElementById('weekly-tracks-loading').style.display = 'none';
+                document.getElementById('weekly-tracks-list').style.display = 'block';
+            } catch (error) {
+                console.error('Error fetching weekly tracks:', error);
+                document.getElementById('weekly-tracks-loading').style.display = 'none';
+                document.getElementById('weekly-tracks-list').innerHTML = `
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 text-red-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p class="text-gray-400 text-lg">Failed to load weekly tracks</p>
+                        <p class="text-gray-500 text-sm mt-2">Please try again later</p>
+                    </div>
+                `;
+                document.getElementById('weekly-tracks-list').style.display = 'block';
+            }
+            
+            const url = new URL(window.location);
+            url.searchParams.set('week', currentWeek);
+            url.searchParams.set('tab', 'tracks');
+            window.history.pushState({}, '', url);
+        }
+
+        /**
+         * Switch back to Spotify API tracks view
+         */
+        function switchToSpotifyTracks() {
+            isWeeklyMode = false;
+            
+            document.getElementById('week-navigation').style.display = 'none';
+            document.getElementById('weekly-tracks-list').style.display = 'none';
+            document.getElementById('spotify-tracks-list').style.display = 'block';
+        }
+
+        /**
+         * Get ISO week number from a date
+         */
+        function getISOWeek(date) {
+            const target = new Date(date.valueOf());
+            const dayNumber = (date.getDay() + 6) % 7;
+            target.setDate(target.getDate() - dayNumber + 3);
+            const firstThursday = target.valueOf();
+            target.setMonth(0, 1);
+            if (target.getDay() !== 4) {
+                target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+            }
+            return 1 + Math.ceil((firstThursday - target) / 604800000);
+        }
+
+        /**
+         * Format week display
+         */
+        function formatWeekDisplay(weekString) {
+            const [year, weekNum] = weekString.split('-W');
+            return `Week ${weekNum}, ${year}`;
+        }
+
+        let calendarYear = new Date().getFullYear();
+        let calendarMonth = new Date().getMonth(); // 0-11
+        
+        /**
+         * Render the calendar for the current calendarYear and calendarMonth
+         */
+        function renderCalendar() {
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            document.getElementById('calendar-month-year').textContent = 
+                `${monthNames[calendarMonth]} ${calendarYear}`;
+            
+            const calendarGrid = document.getElementById('calendar-grid');
+            const firstDay = new Date(calendarYear, calendarMonth, 1);
+            const lastDay = new Date(calendarYear, calendarMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            
+            let startDay = firstDay.getDay() - 1;
+            if (startDay === -1) startDay = 6; // Sunday
+            
+            let html = '';
+            
+            for (let i = 0; i < startDay; i++) {
+                html += '<div class="aspect-square"></div>';
+            }
+            
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(calendarYear, calendarMonth, day);
+                const dateStr = date.toISOString().split('T')[0];
+                const weekNum = getISOWeek(date);
+                
+                let weekYear = calendarYear;
+                if (calendarMonth === 0 && weekNum >= 52) {
+                    weekYear = calendarYear - 1;
+                } else if (calendarMonth === 11 && weekNum === 1) {
+                    weekYear = calendarYear + 1;
+                }
+                
+                const weekString = `${weekYear}-W${String(weekNum).padStart(2, '0')}`;
+                
+                const isToday = dateStr === todayStr;
+                const isCurrentWeek = weekString === currentWeek;
+                
+                html += `
+                    <button 
+                        onclick="selectDayFromCalendar('${weekString}')"
+                        class="aspect-square p-1.5 rounded-lg text-sm font-medium transition-all relative
+                               ${isCurrentWeek ? 'bg-green-600/20 border-2 border-green-500' : 'hover:bg-gray-700 border-2 border-transparent'}
+                               ${isToday ? 'ring-2 ring-blue-500' : ''}"
+                        title="Select week ${weekNum}">
+                        <div class="${isToday ? 'text-blue-400 font-bold' : 'text-gray-300'}">${day}</div>
+                        ${isCurrentWeek ? '<div class="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-green-500 rounded-full"></div>' : ''}
+                    </button>
+                `;
+            }
+            
+            calendarGrid.innerHTML = html;
+        }
+        
+        /**
+         * Change the calendar month
+         */
+        function changeCalendarMonth(delta) {
+            calendarMonth += delta;
+            if (calendarMonth > 11) {
+                calendarMonth = 0;
+                calendarYear++;
+            } else if (calendarMonth < 0) {
+                calendarMonth = 11;
+                calendarYear--;
+            }
+            renderCalendar();
+        }
+        
+        /**
+         * Select a week by clicking a day in the calendar
+         */
+        function selectDayFromCalendar(weekString) {
+            currentWeek = weekString;
+            document.getElementById('week-display').textContent = formatWeekDisplay(weekString);
+            
+            renderCalendar();
+            
+            const weekNav = document.querySelector('#week-navigation');
+            if (weekNav && weekNav.__x) {
+                weekNav.__x.$data.showWeekPicker = false;
+            }
+            
+            navigateWeek('custom', weekString);
+        }
+        
+        /**
+         * Jump to current week
+         */
+        function jumpToCurrentWeek() {
+            const now = new Date();
+            const weekNum = getISOWeek(now);
+            const newWeek = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+            
+            calendarYear = now.getFullYear();
+            calendarMonth = now.getMonth();
+            
+            currentWeek = newWeek;
+            document.getElementById('week-display').textContent = formatWeekDisplay(newWeek);
+            
+            renderCalendar();
+            
+            const weekNav = document.querySelector('#week-navigation');
+            if (weekNav && weekNav.__x) {
+                weekNav.__x.$data.showWeekPicker = false;
+            }
+            
+            navigateWeek('current');
+        }
+
+        /**
+         * Navigate to different weeks
+         */
+        async function navigateWeek(direction, customWeekString = null) {
+            const weekDisplay = document.getElementById('week-display');
+            let newWeek;
+            
+            if (direction === 'custom' && customWeekString) {
+                newWeek = customWeekString;
+            } else if (direction === 'current') {
+                const now = new Date();
+                const weekNum = getISOWeek(now);
+                newWeek = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+            } else {
+                const [year, weekStr] = currentWeek.split('-W');
+                const week = parseInt(weekStr);
+                
+                const jan4 = new Date(year, 0, 4);
+                const mondayOfWeek1 = new Date(jan4);
+                mondayOfWeek1.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1);
+                const targetMonday = new Date(mondayOfWeek1);
+                targetMonday.setDate(mondayOfWeek1.getDate() + (week - 1) * 7);
+                
+                if (direction === 'prev') {
+                    targetMonday.setDate(targetMonday.getDate() - 7);
+                } else if (direction === 'next') {
+                    targetMonday.setDate(targetMonday.getDate() + 7);
+                }
+                
+                const newYear = targetMonday.getFullYear();
+                const newWeekNum = getISOWeek(targetMonday);
+                
+                if (newWeekNum === 1 && targetMonday.getMonth() === 11) {
+                    newWeek = `${newYear + 1}-W01`;
+                } else if (newWeekNum >= 52 && targetMonday.getMonth() === 0) {
+                    newWeek = `${newYear - 1}-W${String(newWeekNum).padStart(2, '0')}`;
+                } else {
+                    newWeek = `${newYear}-W${String(newWeekNum).padStart(2, '0')}`;
+                }
+            }
+            
+            currentWeek = newWeek;
+            weekDisplay.textContent = formatWeekDisplay(newWeek);
+            
+            const [year, weekStr] = newWeek.split('-W');
+            const weekNum = parseInt(weekStr);
+            calendarYear = parseInt(year);
+            calendarMonth = Math.floor((weekNum - 1) * 7 / 30.5);
+            if (calendarMonth > 11) calendarMonth = 11;
+            if (calendarMonth < 0) calendarMonth = 0;
+            
+            renderCalendar();
+            
+            document.getElementById('weekly-tracks-list').style.display = 'none';
+            document.getElementById('weekly-tracks-loading').style.display = 'block';
+            
+            document.getElementById('week-prev-btn').disabled = true;
+            document.getElementById('week-next-btn').disabled = true;
+            
+            try {
+                const response = await fetch(`/stats?type=weekly&week=${newWeek}&ajax=1`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await response.json();
+                
+                updateWeeklyTracksList(data.weeklyTopTracks);
+                
+                const url = new URL(window.location);
+                url.searchParams.set('week', newWeek);
+                window.history.pushState({}, '', url);
+                
+            } catch (error) {
+                console.error('Error fetching weekly data:', error);
+                alert('Failed to load weekly data. Please try again.');
+            } finally {
+                document.getElementById('weekly-tracks-loading').style.display = 'none';
+                document.getElementById('weekly-tracks-list').style.display = 'block';
+                document.getElementById('week-prev-btn').disabled = false;
+                document.getElementById('week-next-btn').disabled = false;
+            }
+        }
+
+        /**
+         * Update the weekly tracks list with new data
+         */
+        function updateWeeklyTracksList(tracks) {
+            const container = document.getElementById('weekly-tracks-list');
+            
+            if (tracks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                        </svg>
+                        <p class="text-gray-400 text-lg">No listening data for this week</p>
+                        <p class="text-gray-500 text-sm mt-2">Start listening to music to see your weekly top tracks!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="space-y-3">';
+            tracks.forEach(track => {
+                const albumImageHtml = track.album_image 
+                    ? `<img src="${track.album_image}" alt="Album" class="w-16 h-16 rounded-lg shadow-lg">`
+                    : `<div class="w-16 h-16 rounded-lg shadow-lg bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                            </svg>
+                       </div>`;
+                
+                html += `
+                    <div class="track-card rounded-xl p-4 flex items-center gap-4">
+                        <div class="rank-badge w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-white font-bold">${track.rank}</span>
+                        </div>
+                        ${albumImageHtml}
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-white text-lg truncate">${track.track_name}</p>
+                            <p class="text-sm text-gray-400 truncate">${track.artist_name}</p>
+                            <div class="flex gap-3 mt-1">
+                                <span class="text-xs text-green-400">${track.play_count} plays</span>
+                                <span class="text-xs text-blue-400">${track.total_minutes} min</span>
+                            </div>
+                        </div>
+                        <div class="text-right hidden md:block">
+                            <p class="text-sm text-gray-400 truncate max-w-xs">${track.album_name}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
         }
 
         // On page load, check if there's a tab parameter in the URL
@@ -750,13 +1284,22 @@
             // Intercept time range filter clicks to preserve current tab
             document.querySelectorAll('.time-range-link').forEach(link => {
                 link.addEventListener('click', function(e) {
-                    e.preventDefault();
                     const range = this.getAttribute('data-range');
+                    
+                    if (range === 'weekly') {
+                        return;
+                    }
+                    
+                    e.preventDefault();
+                    switchToSpotifyTracks();
+                    
                     const currentUrlParams = new URLSearchParams(window.location.search);
                     const currentTab = currentUrlParams.get('tab') || 'tracks';
                     window.location.href = `?range=${range}&tab=${currentTab}`;
                 });
             });
+            
+            renderCalendar();
         });
     </script>
 
